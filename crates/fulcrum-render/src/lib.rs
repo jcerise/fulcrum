@@ -7,6 +7,7 @@ pub mod camera;
 pub mod gizmos;
 pub mod gpu;
 pub mod sprite;
+pub mod text;
 pub mod texture;
 pub mod window;
 
@@ -16,5 +17,6 @@ pub use camera::{Camera2D, ScalingMode};
 pub use gizmos::Gizmos;
 pub use gpu::GpuContext;
 pub use sprite::{Sprite, SpriteRegion};
+pub use text::{DefaultFont, Font, HAlign, Text};
 pub use texture::{AssetLoader, Texture};
 pub use window::{WindowInfo, WindowPlugin};

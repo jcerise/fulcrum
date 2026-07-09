@@ -147,6 +147,7 @@ pub struct AssetLoader<'w> {
     server: Res<'w, AssetServer>,
     textures: ResMut<'w, Assets<Texture>>,
     sheets: ResMut<'w, Assets<crate::atlas::SpriteSheet>>,
+    fonts: ResMut<'w, Assets<crate::text::Font>>,
     gpu: Res<'w, GpuContext>,
 }
 
@@ -155,6 +156,17 @@ impl AssetLoader<'_> {
     /// yields the same handle.
     pub fn load(&mut self, path: &str) -> Handle<Texture> {
         load_texture(&self.server, &mut self.textures, &self.gpu, path)
+    }
+
+    /// Load a TTF/OTF font by path. Errors fall back to the built-in font with a logged error.
+    pub fn load_font(&mut self, path: &str) -> Handle<crate::text::Font> {
+        match crate::text::load_font(&self.server, &mut self.fonts, path) {
+            Ok(handle) => handle,
+            Err(error) => {
+                log::error!("{error}; using the built-in font");
+                Handle::INVALID // Text treats INVALID as "use the default font"
+            }
+        }
     }
 
     /// Register a sprite sheet (e.g. built with `SpriteSheet::from_grid`) and get its handle.

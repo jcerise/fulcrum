@@ -50,7 +50,7 @@ pub mod prelude {
         ResMut, Resource, SimRng, Startup, Time, Transform2D, Update, Vec2, With, Without, vec2,
     };
     pub use fulcrum_render::{
-        AssetLoader, Camera2D, Gizmos, RenderStats, ScalingMode, Sprite, SpriteRegion, SpriteSheet,
-        Texture, WindowInfo, WindowPlugin,
+        AssetLoader, Camera2D, DefaultFont, Font, Gizmos, HAlign, RenderStats, ScalingMode, Sprite,
+        SpriteRegion, SpriteSheet, Text, Texture, WindowInfo, WindowPlugin,
     };
 }

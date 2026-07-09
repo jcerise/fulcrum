@@ -5,7 +5,9 @@ use std::time::Instant;
 
 use bevy_ecs::prelude::Resource;
 use fulcrum_asset::{AssetServer, Assets};
-use fulcrum_core::{Fulcrum, FulcrumConfig, Input, Key, MouseButton, Plugin, Time, vec2};
+use fulcrum_core::{
+    Fulcrum, FulcrumConfig, Input, IntoScheduleConfigs, Key, MouseButton, Plugin, Time, vec2,
+};
 use winit::application::ApplicationHandler;
 use winit::dpi::PhysicalSize;
 use winit::event::{ElementState, MouseScrollDelta, WindowEvent};
@@ -57,7 +59,25 @@ impl Plugin for WindowPlugin {
         let gizmos_enabled = app.config().gizmos_enabled;
         app.world_mut()
             .insert_resource(crate::gizmos::Gizmos::new(gizmos_enabled));
-        app.add_systems(fulcrum_core::PreRender, crate::batch::extract_sprites);
+
+        // Text: font storage, the embedded default font, and the glyph atlas.
+        let mut fonts = Assets::<crate::text::Font>::default();
+        let default_font =
+            crate::text::Font::from_bytes("<default>", crate::text::DEFAULT_FONT_BYTES)
+                .expect("embedded default font parses");
+        let default_handle = fonts.insert_with_path("<default>", default_font);
+        app.world_mut().insert_resource(fonts);
+        app.world_mut()
+            .insert_resource(crate::text::DefaultFont(default_handle));
+        app.world_mut()
+            .insert_resource(crate::text::GlyphCache::new(1024));
+        app.world_mut()
+            .insert_resource(crate::batch::ExtraQuads::default());
+
+        app.add_systems(
+            fulcrum_core::PreRender,
+            (crate::text::extract_text, crate::batch::extract_sprites).chain(),
+        );
         app.set_runner(winit_runner);
     }
 }

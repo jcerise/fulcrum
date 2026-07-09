@@ -377,23 +377,30 @@ impl SpriteRenderer {
     }
 }
 
-/// Collected per sprite before sorting.
-struct ExtractedSprite {
-    z: f32,
-    texture: Handle<Texture>,
-    corners: [Vec2; 4],
-    uv: [[f32; 2]; 4],
-    color: [f32; 4],
+/// Collected per sprite before sorting. Also produced by the text extractor (glyph quads).
+pub(crate) struct ExtractedSprite {
+    pub(crate) z: f32,
+    pub(crate) texture: Handle<Texture>,
+    pub(crate) corners: [Vec2; 4],
+    pub(crate) uv: [[f32; 2]; 4],
+    pub(crate) color: [f32; 4],
 }
+
+/// Extra quads contributed by other extractors (text glyphs) this frame; merged into the sprite
+/// batch before sorting, then cleared.
+#[derive(Resource, Default)]
+pub(crate) struct ExtraQuads(pub(crate) Vec<ExtractedSprite>);
 
 /// `PreRender` system: gather all visible sprites at their interpolated transforms, sort by
 /// `(z, texture)`, and build this frame's vertex list and batches.
+#[allow(clippy::too_many_arguments)] // ECS systems legitimately take many resources
 pub(crate) fn extract_sprites(
     sprites: Query<(&Sprite, &Transform2D, &PreviousTransform2D)>,
     textures: Res<Assets<Texture>>,
     sheets: Res<Assets<crate::atlas::SpriteSheet>>,
     gpu: Res<GpuContext>,
     time: Res<Time>,
+    mut extra: ResMut<ExtraQuads>,
     mut renderer: ResMut<SpriteRenderer>,
     mut stats: ResMut<RenderStats>,
 ) {
@@ -467,6 +474,8 @@ pub(crate) fn extract_sprites(
             ],
         });
     }
+
+    extracted.append(&mut extra.0);
 
     // Stable sort keeps query order for ties, so batching is deterministic frame to frame.
     extracted.sort_by(|a, b| {

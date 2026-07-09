@@ -4,7 +4,7 @@ title: "Phase 2: 2D essentials — camera, text, audio, animation, tilemaps (mil
 status: in-progress
 priority: 2
 created: 2026-07-08
-steps_completed: 3
+steps_completed: 4
 steps_total: 9
 tags: [engine, camera, text, audio, animation, tilemap]
 ---
