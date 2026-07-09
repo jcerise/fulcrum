@@ -37,12 +37,16 @@ impl Plugin for DefaultPlugins {
     fn build(&self, app: &mut Fulcrum) {
         fulcrum_render::WindowPlugin.build(app);
         fulcrum_audio::AudioPlugin.build(app);
+        fulcrum_anim::AnimPlugin.build(app);
     }
 }
 
 /// The single import surface for games: `use fulcrum::prelude::*;`.
 pub mod prelude {
     pub use crate::DefaultPlugins;
+    pub use fulcrum_anim::{
+        AnimPlugin, AnimationClip, AnimationPlayer, AsepriteImport, AsepriteLoader,
+    };
     pub use fulcrum_asset::{AssetServer, Assets, Handle};
     pub use fulcrum_audio::{Audio, AudioPlugin, PlayParams, Sound, SoundLoader};
     pub use fulcrum_core::{
