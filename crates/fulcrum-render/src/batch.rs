@@ -450,17 +450,23 @@ pub(crate) fn extract_sprites(
             ) + interpolated.translation
         });
 
-        // Texture space: v = 0 at the top; our bottom-left corner samples v = 1.
-        let (u0, u1) = if sprite.flip_x {
-            (1.0, 0.0)
-        } else {
-            (0.0, 1.0)
+        // Texture space: v = 0 at the top; our bottom-left corner samples the larger v.
+        let texture_px = Vec2::new(texture.width as f32, texture.height as f32);
+        let (mut u0, mut u1, mut v_top, mut v_bottom) = match region_rect {
+            Some(r) => (
+                r.min.x / texture_px.x,
+                r.max.x / texture_px.x,
+                r.min.y / texture_px.y,
+                r.max.y / texture_px.y,
+            ),
+            None => (0.0, 1.0, 0.0, 1.0),
         };
-        let (v_top, v_bottom) = if sprite.flip_y {
-            (1.0, 0.0)
-        } else {
-            (0.0, 1.0)
-        };
+        if sprite.flip_x {
+            std::mem::swap(&mut u0, &mut u1);
+        }
+        if sprite.flip_y {
+            std::mem::swap(&mut v_top, &mut v_bottom);
+        }
         let uv = [[u0, v_bottom], [u1, v_bottom], [u1, v_top], [u0, v_top]];
 
         extracted.push(ExtractedSprite {
