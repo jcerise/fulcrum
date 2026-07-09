@@ -108,6 +108,11 @@ impl AsepriteLoader<'_> {
         &self.sheets
     }
 
+    /// Re-import a changed file over its existing handles (hot reload).
+    pub fn reload(&mut self, json_path: &str) -> Result<(), AssetError> {
+        self.load(json_path).map(|_| ())
+    }
+
     /// Load an Aseprite JSON export (and its packed PNG, resolved relative to the JSON's
     /// directory). Frame durations convert from milliseconds to simulation ticks.
     pub fn load(&mut self, json_path: &str) -> Result<AsepriteImport, AssetError> {
@@ -140,7 +145,7 @@ impl AsepriteLoader<'_> {
                 sheet.names.insert(frame.filename.clone(), index as u32);
             }
         }
-        let sheet = self.sheets.insert_with_path(json_path, sheet);
+        let sheet = self.sheets.insert_or_replace_with_path(json_path, sheet);
 
         let tick_rate = self.config.tick_rate;
         let mut clips = FxHashMap::default();
@@ -168,7 +173,11 @@ impl AsepriteLoader<'_> {
                 frame_ticks,
                 looping: true,
             };
-            clips.insert(tag.name.clone(), self.clips.insert(clip));
+            clips.insert(
+                tag.name.clone(),
+                self.clips
+                    .insert_or_replace_with_path(format!("{json_path}#{}", tag.name), clip),
+            );
         }
 
         Ok(AsepriteImport { sheet, clips })

@@ -309,6 +309,33 @@ pub(crate) fn extract_tilemaps(
     stats.tilemap_chunks = visible_chunks;
 }
 
+/// Hot reload: re-parse a changed map file in place, reusing the existing sheet handle (tile
+/// texture changes reload separately as textures). Chunk meshes rebuild lazily.
+pub(crate) fn reload_tilemap(
+    server: &AssetServer,
+    tilemaps: &mut Assets<TilemapAsset>,
+    path: &str,
+) {
+    let Some(handle) = tilemaps.handle_for_path(path) else {
+        return;
+    };
+    let sheet = match tilemaps.get(handle) {
+        Some(asset) => asset.sheet,
+        None => return,
+    };
+    let rebuilt = server
+        .read_bytes(path)
+        .and_then(|bytes| parse_def(path, &bytes))
+        .and_then(|def| build_asset(path, &def, sheet));
+    match rebuilt {
+        Ok(asset) => {
+            tilemaps.replace(handle, asset);
+            log::info!("reloaded tilemap {path}");
+        }
+        Err(error) => log::error!("hot reload: {error}"),
+    }
+}
+
 /// One-line tilemap loading: `let map = maps.load("maps/level1.map.ron")?;`
 #[derive(SystemParam)]
 pub struct TilemapLoader<'w> {

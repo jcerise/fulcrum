@@ -97,14 +97,12 @@ impl SpriteDef {
     }
 }
 
-/// Resolve defs that only need plain assets (textures, fonts, tilemaps).
+/// Resolve defs that only need plain assets (textures, fonts).
 pub(crate) fn resolve_plain_defs(
     mut commands: Commands,
     sprites: Query<(Entity, &SpriteDef), Without<Sprite>>,
     texts: Query<(Entity, &TextDef), Without<Text>>,
-    tilemaps: Query<(Entity, &TilemapDef), Without<Tilemap>>,
     mut assets: AssetLoader,
-    mut maps: TilemapLoader,
 ) {
     for (entity, def) in &sprites {
         // Sheet-based sprites are handled by `resolve_aseprite_defs`.
@@ -130,6 +128,15 @@ pub(crate) fn resolve_plain_defs(
         }
         commands.entity(entity).insert(text);
     }
+}
+
+/// Resolve tilemap defs (separate system: `TilemapLoader` shares asset storage with
+/// `AssetLoader`, and one system may not hold both).
+pub(crate) fn resolve_tilemap_defs(
+    mut commands: Commands,
+    tilemaps: Query<(Entity, &TilemapDef), Without<Tilemap>>,
+    mut maps: TilemapLoader,
+) {
     for (entity, def) in &tilemaps {
         match maps.load(&def.asset) {
             Ok(asset) => {

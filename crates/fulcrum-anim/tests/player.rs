@@ -88,3 +88,31 @@ fn restart_with_same_clip_does_not_stutter() {
     player.restart(clip);
     assert_eq!(player.frame_index, 1, "same clip -> no reset");
 }
+
+#[test]
+fn hot_reload_shrinking_a_clip_clamps_live_players() {
+    let (mut app, clip) = app_with_clip(vec![1, 1, 1, 1, 1], true);
+    let entity = spawn_player(&mut app, clip);
+    app.run_startup();
+    for _ in 0..3 {
+        app.tick(); // frame_index now 3
+    }
+    // Replace with a 2-frame clip behind the same handle (what hot reload does).
+    app.world_mut()
+        .resource_mut::<Assets<AnimationClip>>()
+        .replace(
+            clip,
+            AnimationClip {
+                sheet: Handle::INVALID,
+                frames: vec![0, 1],
+                frame_ticks: vec![1, 1],
+                looping: true,
+            },
+        );
+    app.tick(); // must clamp, not panic
+    let sprite = app.world().entity(entity).get::<Sprite>().unwrap();
+    assert!(
+        sprite.region.unwrap().index <= 1,
+        "clamped to the shorter clip"
+    );
+}

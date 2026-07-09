@@ -9,6 +9,7 @@ repository.workspace = true
 [dependencies]
 bevy_ecs = { workspace = true }
 image = { workspace = true }
+notify = { workspace = true }
 rustc-hash = { workspace = true }
 thiserror = { workspace = true }
 log = { workspace = true }

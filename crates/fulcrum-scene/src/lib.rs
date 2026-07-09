@@ -43,6 +43,49 @@ impl RegisterComponentExt for Fulcrum {
     }
 }
 
+/// Hot reload: re-parse changed prefab/scene files in place. Live entities are not
+/// retro-patched — edits affect future spawns (respawn via scene reload is the workflow).
+fn reload_data_assets(
+    mut events: fulcrum_core::EventReader<fulcrum_asset::AssetEvent>,
+    server: bevy_ecs::prelude::Res<fulcrum_asset::AssetServer>,
+    mut prefabs: bevy_ecs::prelude::ResMut<fulcrum_asset::Assets<PrefabAsset>>,
+    mut scenes: bevy_ecs::prelude::ResMut<fulcrum_asset::Assets<SceneAsset>>,
+) {
+    for event in events.read() {
+        let path = &event.path;
+        if let Some(handle) = prefabs.handle_for_path(path) {
+            match server
+                .read_bytes(path)
+                .map_err(|e| e.to_string())
+                .and_then(|b| {
+                    prefab::parse_prefab(path, &String::from_utf8_lossy(&b))
+                        .map_err(|e| e.to_string())
+                }) {
+                Ok(asset) => {
+                    prefabs.replace(handle, asset);
+                    log::info!("reloaded prefab {path} (affects future spawns)");
+                }
+                Err(error) => log::error!("hot reload: {error}"),
+            }
+        }
+        if let Some(handle) = scenes.handle_for_path(path) {
+            match server
+                .read_bytes(path)
+                .map_err(|e| e.to_string())
+                .and_then(|b| {
+                    scene::parse_scene(path, &String::from_utf8_lossy(&b))
+                        .map_err(|e| e.to_string())
+                }) {
+                Ok(asset) => {
+                    scenes.replace(handle, asset);
+                    log::info!("reloaded scene {path}");
+                }
+                Err(error) => log::error!("hot reload: {error}"),
+            }
+        }
+    }
+}
+
 /// Installs the registry (with the serializable built-ins) and the def-resolver systems.
 /// Part of `DefaultPlugins`.
 pub struct ScenePlugin;
@@ -71,7 +114,14 @@ impl Plugin for ScenePlugin {
         // storage.
         app.add_systems(
             Update,
-            (defs::resolve_plain_defs, defs::resolve_aseprite_defs).chain(),
+            (
+                defs::resolve_plain_defs,
+                defs::resolve_tilemap_defs,
+                defs::resolve_aseprite_defs,
+            )
+                .chain(),
         );
+        app.register_event::<fulcrum_asset::AssetEvent>();
+        app.add_systems(Update, reload_data_assets);
     }
 }

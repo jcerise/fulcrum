@@ -324,6 +324,12 @@ impl SpriteRenderer {
             })
     }
 
+    /// Drop the cached bind group for a texture (hot reload replaced the GPU texture behind
+    /// the handle); it re-creates from the new texture on the next frame.
+    pub(crate) fn invalidate_texture(&mut self, texture_id: u32) {
+        self.texture_bind_groups.remove(&texture_id);
+    }
+
     /// Upload this frame's vertices and record the draws into `pass`: the letterbox background
     /// (when bars are showing), then every sprite batch. Called inside the frame's render pass.
     pub(crate) fn draw(

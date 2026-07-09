@@ -6,6 +6,7 @@ pub mod batch;
 pub mod camera;
 pub mod gizmos;
 pub mod gpu;
+pub mod reload;
 pub mod sprite;
 pub mod text;
 pub mod texture;

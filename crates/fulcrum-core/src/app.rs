@@ -31,6 +31,9 @@ pub struct FulcrumConfig {
     /// Whether debug gizmos draw. Defaults to true in debug builds, false in release, so
     /// shipped games don't pay for stray debug overlays.
     pub gizmos_enabled: bool,
+    /// Watch the asset root and reload changed assets live. Defaults to true in debug builds,
+    /// false in release. A reload mid-run invalidates replay/determinism guarantees (dev tool).
+    pub hot_reload: bool,
 }
 
 impl Default for FulcrumConfig {
@@ -42,6 +45,7 @@ impl Default for FulcrumConfig {
             seed: DEFAULT_SEED,
             clear_color: Color::BLACK,
             gizmos_enabled: cfg!(debug_assertions),
+            hot_reload: cfg!(debug_assertions),
         }
     }
 }

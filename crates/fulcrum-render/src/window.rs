@@ -62,6 +62,24 @@ impl Plugin for WindowPlugin {
         app.world_mut()
             .insert_resource(crate::gizmos::Gizmos::new(gizmos_enabled));
 
+        // Hot reload (dev builds): watch the asset root, pump changes as AssetEvents, and
+        // reload GPU-side assets in place.
+        app.register_event::<fulcrum_asset::AssetEvent>();
+        if app.config().hot_reload {
+            let root = app.world().resource::<AssetServer>().root().clone();
+            if let Some(watcher) = fulcrum_asset::AssetWatcher::start(root) {
+                app.world_mut().insert_resource(watcher);
+            }
+            app.add_systems(
+                fulcrum_core::Update,
+                (
+                    crate::reload::pump_asset_events,
+                    crate::reload::reload_render_assets,
+                )
+                    .chain(),
+            );
+        }
+
         // Text: font storage, the embedded default font, and the glyph atlas.
         let mut fonts = Assets::<crate::text::Font>::default();
         let default_font =

@@ -7,6 +7,7 @@
 
 pub mod assets;
 pub mod handle;
+pub mod watch;
 
 use std::path::PathBuf;
 
@@ -14,6 +15,7 @@ use bevy_ecs::prelude::Resource;
 
 pub use assets::Assets;
 pub use handle::Handle;
+pub use watch::{AssetEvent, AssetWatcher, Debounce};
 
 /// Errors produced while loading assets. Loaders log these and fall back to placeholders rather
 /// than panicking.

@@ -4,7 +4,7 @@ title: "Phase 3: Structure — prefabs, scenes, hot reload, animation state mach
 status: in-progress
 priority: 3
 created: 2026-07-08
-steps_completed: 3
+steps_completed: 4
 steps_total: 9
 tags: [engine, prefabs, scenes, hot-reload, ui, animation, egui]
 ---

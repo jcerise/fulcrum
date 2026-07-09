@@ -38,6 +38,27 @@ impl<T: Send + Sync + 'static> Assets<T> {
         handle
     }
 
+    /// Replace the asset behind `handle` in place — every holder of the handle sees the new
+    /// data (the hot-reload primitive).
+    pub fn replace(&mut self, handle: Handle<T>, value: T) {
+        if let Some(slot) = self.items.get_mut(handle.id() as usize) {
+            *slot = value;
+        } else {
+            log::error!("Assets::replace: stale handle {handle:?}");
+        }
+    }
+
+    /// Insert under a path, or replace in place if the path is already registered.
+    pub fn insert_or_replace_with_path(&mut self, path: impl Into<String>, value: T) -> Handle<T> {
+        let path = path.into();
+        if let Some(handle) = self.handle_for_path(&path) {
+            self.replace(handle, value);
+            handle
+        } else {
+            self.insert_with_path(path, value)
+        }
+    }
+
     /// The handle previously registered for `path`, if any.
     pub fn handle_for_path(&self, path: &str) -> Option<Handle<T>> {
         self.by_path.get(path).copied().map(Handle::new)

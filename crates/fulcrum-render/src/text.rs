@@ -162,6 +162,14 @@ impl GlyphCache {
         self.shelves.len()
     }
 
+    /// Forget every cached glyph (font hot reload). Existing atlas pages are reused; stale
+    /// pixels get overwritten as glyphs re-rasterize.
+    pub(crate) fn clear(&mut self) {
+        self.entries.clear();
+        self.shelves.clear();
+        self.pending.clear();
+    }
+
     /// Fetch (or rasterize and pack) a glyph. `None` for whitespace/zero-size glyphs.
     fn glyph(
         &mut self,
