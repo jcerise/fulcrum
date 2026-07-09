@@ -36,9 +36,11 @@ systems, rendering, audio) is exempt.
 
 ## System ordering
 
-Within `FixedUpdate`, systems without explicit ordering may run in parallel/nondeterministic
-order. If two systems write the same data, order them explicitly (`.chain()`, `.before()`,
-`.after()`). A good default for game logic: one `.chain()`ed tuple of systems.
+`FixedUpdate` always runs on the single-threaded executor, so system execution order is the
+schedule's topological order — deterministic for identical system registration. Still order
+systems that write the same data explicitly (`.chain()`, `.before()`, `.after()`): the
+topological order of ambiguous systems is an implementation detail that can shift when systems
+are added or removed. A good default for game logic: one `.chain()`ed tuple.
 
 ## Enforcement
 

@@ -996,6 +996,7 @@ name = "fulcrum"
 version = "0.1.0"
 dependencies = [
  "bevy_ecs",
+ "fulcrum-anim",
  "fulcrum-asset",
  "fulcrum-audio",
  "fulcrum-core",

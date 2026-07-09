@@ -83,7 +83,12 @@ impl Fulcrum {
         let mut world = World::new();
         let mut schedules = Schedules::default();
         schedules.insert(Schedule::new(Startup));
-        schedules.insert(Schedule::new(FixedUpdate));
+        // The simulation schedule runs single-threaded: with the parallel executor, systems
+        // with ambiguous ordering could execute in a different order run-to-run, silently
+        // breaking the determinism promise. Cosmetic schedules keep the default executor.
+        let mut fixed_update = Schedule::new(FixedUpdate);
+        fixed_update.set_executor(bevy_ecs::schedule::SingleThreadedExecutor::new());
+        schedules.insert(fixed_update);
         schedules.insert(Schedule::new(Update));
         schedules.insert(Schedule::new(PreRender));
         world.insert_resource(schedules);
