@@ -1,0 +1,12 @@
+Prefab(
+    components: {
+        "Name": ("bat"),
+        "Transform2D": (),
+        "Sprite": (sheet: "creatures.json", region: "bat 0", z: 4.0),
+        "AnimationPlayer": (clip: "creatures.json#bat"),
+        "Health": (max: 1, current: 1),
+        "MoveStats": (speed: 60.0),
+        "Melee": (damage: 1, cooldown: 90),
+        "MonsterTag": (gold: 8),
+    },
+)

@@ -1,0 +1,42 @@
+Ui(root: Node(
+    anchor: TopLeft, size: Fill,
+    children: [
+        Node(
+            anchor: TopLeft, offset: (8, 8), size: Fit, stack: Vertical(2),
+            kind: Panel(color: (r: 0.0, g: 0.0, b: 0.0, a: 0.55)),
+            children: [
+                Node(id: "hp", kind: Label(text: "HP 5/5", size: 16, color: (r: 1.0, g: 0.5, b: 0.5, a: 1.0))),
+                Node(id: "gold", kind: Label(text: "Gold: 0", size: 16, color: (r: 0.95, g: 0.85, b: 0.4, a: 1.0))),
+            ],
+        ),
+        Node(
+            id: "inventory", visible: false,
+            anchor: CenterRight, pivot: (1.0, 0.5), offset: (-12, 0), size: Px((150, 120)), stack: Vertical(4),
+            kind: Panel(color: (r: 0.08, g: 0.08, b: 0.14, a: 0.9)),
+            children: [
+                Node(kind: Label(text: "Inventory", size: 16)),
+                Node(kind: Label(text: "- rusty sword", size: 8, color: (r: 0.8, g: 0.8, b: 0.8, a: 1.0))),
+                Node(kind: Label(text: "- torch", size: 8, color: (r: 0.8, g: 0.8, b: 0.8, a: 1.0))),
+            ],
+        ),
+        Node(
+            id: "pause", visible: false,
+            anchor: Center, pivot: (0.5, 0.5), size: Px((200, 110)), stack: Vertical(8),
+            kind: Panel(color: (r: 0.05, g: 0.05, b: 0.1, a: 0.92)),
+            children: [
+                Node(kind: Label(text: "PAUSED", size: 16)),
+                Node(id: "resume", size: Px((184, 26)), offset: (8, 0), kind: Button(text: "Resume", text_size: 8)),
+                Node(id: "quit", size: Px((184, 26)), offset: (8, 0), kind: Button(text: "Quit", text_size: 8)),
+            ],
+        ),
+        Node(
+            id: "dead", visible: false,
+            anchor: Center, pivot: (0.5, 0.5), size: Fit, stack: Vertical(4),
+            kind: Panel(color: (r: 0.2, g: 0.02, b: 0.02, a: 0.9)),
+            children: [
+                Node(kind: Label(text: "YOU DIED", size: 24, color: (r: 1.0, g: 0.3, b: 0.3, a: 1.0))),
+                Node(kind: Label(text: "press Enter", size: 8)),
+            ],
+        ),
+    ],
+))

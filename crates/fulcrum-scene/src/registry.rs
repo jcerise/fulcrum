@@ -59,13 +59,12 @@ fn insert_impl<T: Component + DeserializeOwned>(
     entity: &mut EntityWorldMut,
     value: &ron::Value,
 ) -> Result<(), SceneError> {
-    let component: T = value
-        .clone()
-        .into_rust()
-        .map_err(|error| SceneError::InvalidValue {
+    let component = T::deserialize(crate::value_de::FlexValue(value)).map_err(|error| {
+        SceneError::InvalidValue {
             name: name.to_string(),
             message: error.to_string(),
-        })?;
+        }
+    })?;
     entity.insert(component);
     Ok(())
 }

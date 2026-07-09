@@ -1,0 +1,12 @@
+Prefab(
+    components: {
+        "Name": ("slime"),
+        "Transform2D": (),
+        "Sprite": (sheet: "creatures.json", region: "slime 0", z: 4.0),
+        "AnimationPlayer": (clip: "creatures.json#slime"),
+        "Health": (max: 2, current: 2),
+        "MoveStats": (speed: 30.0),
+        "Melee": (damage: 1, cooldown: 60),
+        "MonsterTag": (gold: 5),
+    },
+)

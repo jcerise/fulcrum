@@ -9,7 +9,7 @@
 use bevy_ecs::prelude::{Commands, Component, Entity, Query, Without};
 use fulcrum_anim::{AnimationPlayer, Animator, AnimatorLoader, AsepriteLoader};
 use fulcrum_core::{Color, Vec2};
-use fulcrum_render::{AssetLoader, HAlign, Sprite, Text, Tilemap, TilemapLoader};
+use fulcrum_render::{AssetLoader, HAlign, Sprite, Text, Tilemap};
 use serde::{Deserialize, Serialize};
 
 fn default_text_size() -> f32 {
@@ -137,15 +137,16 @@ pub(crate) fn resolve_plain_defs(
     }
 }
 
-/// Resolve tilemap defs (separate system: `TilemapLoader` shares asset storage with
-/// `AssetLoader`, and one system may not hold both).
+/// Resolve tilemap defs. Runs in `FixedUpdate`: tile data is simulation state (collision), so
+/// it must exist headless and deterministically; the texture attaches via a cosmetic system.
 pub(crate) fn resolve_tilemap_defs(
     mut commands: Commands,
-    tilemaps: Query<(Entity, &TilemapDef), Without<Tilemap>>,
-    mut maps: TilemapLoader,
+    defs: Query<(Entity, &TilemapDef), Without<Tilemap>>,
+    server: bevy_ecs::prelude::Res<fulcrum_asset::AssetServer>,
+    mut tilemaps: bevy_ecs::prelude::ResMut<fulcrum_asset::Assets<fulcrum_render::TilemapAsset>>,
 ) {
-    for (entity, def) in &tilemaps {
-        match maps.load(&def.asset) {
+    for (entity, def) in &defs {
+        match fulcrum_render::tilemap::load_tilemap_data(&server, &mut tilemaps, &def.asset) {
             Ok(asset) => {
                 commands.entity(entity).insert(Tilemap { asset, z: def.z });
             }

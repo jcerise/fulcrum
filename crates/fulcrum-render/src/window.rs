@@ -67,8 +67,14 @@ impl Plugin for WindowPlugin {
             .insert_resource(Assets::<crate::texture::Texture>::default());
         app.world_mut()
             .insert_resource(Assets::<crate::atlas::SpriteSheet>::default());
-        app.world_mut()
-            .insert_resource(Assets::<crate::tilemap::TilemapAsset>::default());
+        if app
+            .world()
+            .get_resource::<Assets<crate::tilemap::TilemapAsset>>()
+            .is_none()
+        {
+            app.world_mut()
+                .insert_resource(Assets::<crate::tilemap::TilemapAsset>::default());
+        }
         app.world_mut()
             .insert_resource(crate::batch::RenderStats::default());
         app.world_mut()
@@ -111,6 +117,7 @@ impl Plugin for WindowPlugin {
         app.world_mut()
             .insert_resource(crate::batch::ExtraQuads::default());
 
+        app.add_systems(fulcrum_core::Update, crate::tilemap::dress_tilemaps);
         app.add_systems(
             fulcrum_core::PreRender,
             (

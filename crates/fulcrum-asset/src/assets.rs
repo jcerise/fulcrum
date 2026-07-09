@@ -85,6 +85,11 @@ impl<T: Send + Sync + 'static> Assets<T> {
         entries
     }
 
+    /// All live handles (index order).
+    pub fn handles(&self) -> Vec<Handle<T>> {
+        (0..self.items.len() as u32).map(Handle::new).collect()
+    }
+
     /// Number of stored assets.
     pub fn len(&self) -> usize {
         self.items.len()

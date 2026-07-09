@@ -5,6 +5,7 @@ pub mod defs;
 pub mod prefab;
 pub mod registry;
 pub mod scene;
+pub(crate) mod value_de;
 
 use fulcrum_core::{Component, Fulcrum, IntoScheduleConfigs, Plugin, Transform2D, Update};
 use serde::Serialize;
@@ -102,6 +103,14 @@ impl Plugin for ScenePlugin {
             registry.register::<defs::AnimatorDef>("Animator");
             registry.register::<TilemapDef>("Tilemap");
         }
+        if app
+            .world()
+            .get_resource::<fulcrum_asset::Assets<fulcrum_render::TilemapAsset>>()
+            .is_none()
+        {
+            app.world_mut()
+                .insert_resource(fulcrum_asset::Assets::<fulcrum_render::TilemapAsset>::default());
+        }
         app.world_mut()
             .insert_resource(fulcrum_asset::Assets::<PrefabAsset>::default());
         app.world_mut()
@@ -111,14 +120,16 @@ impl Plugin for ScenePlugin {
         // Queued prefab/scene work applies first thing each tick. NOTE: add DefaultPlugins
         // before game plugins so this runs before game systems (single-threaded FixedUpdate
         // runs in registration order for unordered systems).
-        app.add_systems(fulcrum_core::FixedUpdate, prefab::apply_spawn_queues);
+        app.add_systems(
+            fulcrum_core::FixedUpdate,
+            (prefab::apply_spawn_queues, defs::resolve_tilemap_defs).chain(),
+        );
         // Resolvers are cosmetic (they attach visuals); chained because both touch texture
         // storage.
         app.add_systems(
             Update,
             (
                 defs::resolve_plain_defs,
-                defs::resolve_tilemap_defs,
                 defs::resolve_aseprite_defs,
                 defs::resolve_animator_defs,
             )

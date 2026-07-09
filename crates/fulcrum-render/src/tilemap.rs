@@ -68,8 +68,11 @@ struct ChunkCache {
 
 /// A loaded tilemap: layers of tile data plus per-chunk cached meshes.
 pub struct TilemapAsset {
-    /// The sheet tiles index into.
+    /// The sheet tiles index into ([`Handle::INVALID`] until the cosmetic dressing system
+    /// loads the texture — tile *data* is simulation state and loads without a GPU).
     pub sheet: Handle<SpriteSheet>,
+    /// Texture path + grid, kept so the dressing system (and hot reload) can build the sheet.
+    pub(crate) texture_recipe: Option<(String, u32, u32)>,
     /// Tile size in world units.
     pub tile_size: Vec2,
     /// The layers, drawn in order (later layers on top).
@@ -132,11 +135,55 @@ fn build_asset(
     let chunk_maps = layers.iter().map(|_| FxHashMap::default()).collect();
     Ok(TilemapAsset {
         sheet,
+        texture_recipe: Some((def.texture.clone(), def.sheet_cols, def.sheet_rows)),
         tile_size: vec2(def.tile_size.0, def.tile_size.1),
         layers,
         chunks: chunk_maps,
         rebuilt_last_frame: 0,
     })
+}
+
+/// Load tilemap *data* by path without touching the GPU (usable headless / from `FixedUpdate`).
+/// The tile texture attaches later via the cosmetic dressing system.
+pub fn load_tilemap_data(
+    server: &AssetServer,
+    tilemaps: &mut Assets<TilemapAsset>,
+    path: &str,
+) -> Result<Handle<TilemapAsset>, AssetError> {
+    if let Some(handle) = tilemaps.handle_for_path(path) {
+        return Ok(handle);
+    }
+    let bytes = server.read_bytes(path)?;
+    let def = parse_def(path, &bytes)?;
+    let asset = build_asset(path, &def, Handle::INVALID)?;
+    Ok(tilemaps.insert_with_path(path, asset))
+}
+
+/// Cosmetic `Update` system: give data-loaded tilemaps their texture + sheet.
+pub(crate) fn dress_tilemaps(
+    mut tilemaps: bevy_ecs::prelude::ResMut<Assets<TilemapAsset>>,
+    mut textures: bevy_ecs::prelude::ResMut<Assets<Texture>>,
+    mut sheets: bevy_ecs::prelude::ResMut<Assets<SpriteSheet>>,
+    server: bevy_ecs::prelude::Res<AssetServer>,
+    gpu: bevy_ecs::prelude::Res<crate::gpu::GpuContext>,
+) {
+    for handle in tilemaps.handles() {
+        let Some(asset) = tilemaps.get(handle) else {
+            continue;
+        };
+        if asset.sheet != Handle::INVALID {
+            continue;
+        }
+        let Some((texture_path, cols, rows)) = asset.texture_recipe.clone() else {
+            continue;
+        };
+        let tile_size = asset.tile_size;
+        let texture = load_texture(&server, &mut textures, &gpu, &texture_path);
+        let sheet = sheets.insert(SpriteSheet::from_grid(texture, tile_size, cols, rows));
+        if let Some(asset) = tilemaps.get_mut(handle) {
+            asset.sheet = sheet;
+        }
+    }
 }
 
 impl TilemapAsset {
@@ -145,6 +192,7 @@ impl TilemapAsset {
         let chunk_maps = layers.iter().map(|_| FxHashMap::default()).collect();
         Self {
             sheet,
+            texture_recipe: None,
             tile_size,
             layers,
             chunks: chunk_maps,

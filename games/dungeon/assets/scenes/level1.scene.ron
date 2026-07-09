@@ -1,0 +1,12 @@
+Scene(
+    entities: [
+        ( components: { "Name": ("map"), "Transform2D": (), "Tilemap": (asset: "maps/dungeon.map.ron", z: 0.0) } ),
+        ( prefab: "prefabs/player.prefab.ron", at: (72.0, 72.0) ),
+        ( prefab: "prefabs/slime.prefab.ron", at: (200.0, 120.0) ),
+        ( prefab: "prefabs/slime.prefab.ron", at: (240.0, 260.0) ),
+        ( prefab: "prefabs/bat.prefab.ron", at: (420.0, 90.0) ),
+        ( prefab: "prefabs/bat.prefab.ron", at: (480.0, 300.0) ),
+        ( prefab: "prefabs/skeleton.prefab.ron", at: (520.0, 200.0) ),
+        ( prefab: "prefabs/skeleton.prefab.ron", at: (330.0, 320.0) ),
+    ],
+)

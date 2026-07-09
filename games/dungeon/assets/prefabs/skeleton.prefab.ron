@@ -1,0 +1,12 @@
+Prefab(
+    components: {
+        "Name": ("skeleton"),
+        "Transform2D": (),
+        "Sprite": (sheet: "creatures.json", region: "skeleton 0", z: 4.0),
+        "AnimationPlayer": (clip: "creatures.json#skeleton"),
+        "Health": (max: 3, current: 3),
+        "MoveStats": (speed: 42.0),
+        "Melee": (damage: 2, cooldown: 80),
+        "MonsterTag": (gold: 15),
+    },
+)
