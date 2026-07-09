@@ -50,6 +50,8 @@ impl Plugin for WindowPlugin {
             .insert_resource(Assets::<crate::texture::Texture>::default());
         app.world_mut()
             .insert_resource(crate::batch::RenderStats::default());
+        app.world_mut()
+            .insert_resource(crate::camera::Camera2D::default());
         app.add_systems(fulcrum_core::PreRender, crate::batch::extract_sprites);
         app.set_runner(winit_runner);
     }
@@ -87,16 +89,21 @@ impl WinitApp {
         self.last_frame = Some(now);
 
         let fixed_delta = self.app.world().resource::<Time>().fixed_delta;
-        let viewport = {
+        let window_size = {
             let info = self.app.world().resource::<WindowInfo>();
             vec2(info.width as f32, info.height as f32)
         };
+        let camera = self
+            .app
+            .world()
+            .resource::<crate::camera::Camera2D>()
+            .clone();
         self.accumulator += frame_delta.min(MAX_FRAME_TIME);
         while self.accumulator >= fixed_delta {
             self.app
                 .world_mut()
                 .resource_mut::<Input>()
-                .sample(viewport);
+                .sample(|screen| camera.screen_to_world(screen, window_size));
             self.app.tick();
             self.accumulator -= fixed_delta;
         }
@@ -138,8 +145,11 @@ impl ApplicationHandler for WinitApp {
             scale_factor: window.scale_factor() as f32,
         });
         let context = gpu::init(window.clone(), size.width, size.height);
-        let renderer =
-            crate::batch::SpriteRenderer::new(&context.device, context.surface_config.format);
+        let renderer = crate::batch::SpriteRenderer::new(
+            &context.device,
+            &context.queue,
+            context.surface_config.format,
+        );
         self.app.world_mut().insert_resource(context);
         self.app.world_mut().insert_resource(renderer);
         self.window = Some(window);

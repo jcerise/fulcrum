@@ -49,5 +49,7 @@ pub mod prelude {
         IntoScheduleConfigs, Key, Local, MouseButton, Or, Plugin, PreRender, Query, Res, ResMut,
         Resource, SimRng, Startup, Time, Transform2D, Update, Vec2, With, Without, vec2,
     };
-    pub use fulcrum_render::{AssetLoader, RenderStats, Sprite, Texture, WindowInfo, WindowPlugin};
+    pub use fulcrum_render::{
+        AssetLoader, Camera2D, RenderStats, ScalingMode, Sprite, Texture, WindowInfo, WindowPlugin,
+    };
 }

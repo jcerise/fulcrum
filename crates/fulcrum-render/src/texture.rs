@@ -43,12 +43,24 @@ pub(crate) fn upload_rgba(
     width: u32,
     height: u32,
 ) -> Texture {
+    upload_raw(&gpu.device, &gpu.queue, label, pixels, width, height)
+}
+
+/// Upload RGBA8 pixels given raw device/queue (usable before `GpuContext` is a resource).
+pub(crate) fn upload_raw(
+    device: &wgpu::Device,
+    queue: &wgpu::Queue,
+    label: &str,
+    pixels: &[u8],
+    width: u32,
+    height: u32,
+) -> Texture {
     let size = wgpu::Extent3d {
         width,
         height,
         depth_or_array_layers: 1,
     };
-    let texture = gpu.device.create_texture(&wgpu::TextureDescriptor {
+    let texture = device.create_texture(&wgpu::TextureDescriptor {
         label: Some(label),
         size,
         mip_level_count: 1,
@@ -58,7 +70,7 @@ pub(crate) fn upload_rgba(
         usage: wgpu::TextureUsages::TEXTURE_BINDING | wgpu::TextureUsages::COPY_DST,
         view_formats: &[],
     });
-    gpu.queue.write_texture(
+    queue.write_texture(
         wgpu::TexelCopyTextureInfo {
             texture: &texture,
             mip_level: 0,

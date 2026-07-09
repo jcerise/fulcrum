@@ -4,10 +4,11 @@
 use bevy_ecs::prelude::{Query, Res, ResMut, Resource};
 use bytemuck::{Pod, Zeroable};
 use fulcrum_asset::{Assets, Handle};
-use fulcrum_core::{PreviousTransform2D, Time, Transform2D, Vec2};
+use fulcrum_core::{Color, PreviousTransform2D, Time, Transform2D, Vec2};
 use glam::Mat4;
 use rustc_hash::FxHashMap;
 
+use crate::camera::CameraFrame;
 use crate::gpu::GpuContext;
 use crate::sprite::Sprite;
 use crate::texture::Texture;
@@ -56,27 +57,21 @@ pub struct SpriteRenderer {
     vertex_capacity: u64,
     vertices: Vec<SpriteVertex>,
     batches: Vec<Batch>,
-}
-
-/// The world-to-clip projection: origin at window center, +Y up, 1 world unit = 1 pixel.
-/// The single function a future `Camera2D` replaces. DirectX convention matches wgpu's NDC
-/// (Y-up, Z in `[0, 1]`).
-fn projection(viewport_width: f32, viewport_height: f32) -> Mat4 {
-    glam::camera::rh::proj::directx::orthographic(
-        -viewport_width / 2.0,
-        viewport_width / 2.0,
-        -viewport_height / 2.0,
-        viewport_height / 2.0,
-        -1.0,
-        1.0,
-    )
+    /// Built-in 1x1 white texture: backs the letterbox background quad (and future solid fills).
+    white_bind_group: wgpu::BindGroup,
+    /// Tiny dedicated buffer for the letterbox background quad.
+    background_buffer: wgpu::Buffer,
 }
 
 const INITIAL_VERTEX_CAPACITY: u64 = 6 * 1024; // vertices, not bytes
 
 impl SpriteRenderer {
     /// Build the pipeline against the surface format.
-    pub(crate) fn new(device: &wgpu::Device, surface_format: wgpu::TextureFormat) -> Self {
+    pub(crate) fn new(
+        device: &wgpu::Device,
+        queue: &wgpu::Queue,
+        surface_format: wgpu::TextureFormat,
+    ) -> Self {
         let shader = device.create_shader_module(wgpu::include_wgsl!("shader.wgsl"));
 
         let globals_layout = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
@@ -169,6 +164,29 @@ impl SpriteRenderer {
 
         let vertex_buffer = Self::create_vertex_buffer(device, INITIAL_VERTEX_CAPACITY);
 
+        // Built-in 1x1 white texture for solid-color quads.
+        let white = crate::texture::upload_raw(device, queue, "white", &[255u8; 4], 1, 1);
+        let white_bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
+            label: Some("sprite white texture"),
+            layout: &texture_layout,
+            entries: &[
+                wgpu::BindGroupEntry {
+                    binding: 0,
+                    resource: wgpu::BindingResource::TextureView(&white.view),
+                },
+                wgpu::BindGroupEntry {
+                    binding: 1,
+                    resource: wgpu::BindingResource::Sampler(&sampler),
+                },
+            ],
+        });
+        let background_buffer = device.create_buffer(&wgpu::BufferDescriptor {
+            label: Some("letterbox background"),
+            size: 6 * std::mem::size_of::<SpriteVertex>() as u64,
+            usage: wgpu::BufferUsages::VERTEX | wgpu::BufferUsages::COPY_DST,
+            mapped_at_creation: false,
+        });
+
         Self {
             pipeline,
             globals_buffer,
@@ -180,6 +198,8 @@ impl SpriteRenderer {
             vertex_capacity: INITIAL_VERTEX_CAPACITY,
             vertices: Vec::new(),
             batches: Vec::new(),
+            white_bind_group,
+            background_buffer,
         }
     }
 
@@ -218,21 +238,44 @@ impl SpriteRenderer {
             })
     }
 
-    /// Upload this frame's vertices and record the sprite draws into `pass`. Called from the
-    /// frame render inside the clear pass.
+    /// Upload this frame's vertices and record the draws into `pass`: the letterbox background
+    /// (when bars are showing), then every sprite batch. Called inside the frame's render pass.
     pub(crate) fn draw(
         &mut self,
         gpu: &GpuContext,
-        viewport: (f32, f32),
+        frame: &CameraFrame,
+        clear_color: Color,
         pass: &mut wgpu::RenderPass<'_>,
     ) {
+        if self.batches.is_empty() && !frame.letterboxed {
+            return;
+        }
+        let view_proj = frame.view_proj.to_cols_array();
+        gpu.queue
+            .write_buffer(&self.globals_buffer, 0, bytemuck::cast_slice(&view_proj));
+
+        pass.set_pipeline(&self.pipeline);
+        pass.set_bind_group(0, &self.globals_bind_group, &[]);
+
+        if frame.letterboxed {
+            // The pass cleared the whole surface to black (the bars); paint the game's clear
+            // color across the visible world.
+            let color = [clear_color.r, clear_color.g, clear_color.b, clear_color.a];
+            let quad = [0usize, 1, 2, 0, 2, 3].map(|i| SpriteVertex {
+                position: frame.bg_corners[i].into(),
+                uv: [0.0, 0.0],
+                color,
+            });
+            gpu.queue
+                .write_buffer(&self.background_buffer, 0, bytemuck::cast_slice(&quad));
+            pass.set_vertex_buffer(0, self.background_buffer.slice(..));
+            pass.set_bind_group(1, &self.white_bind_group, &[]);
+            pass.draw(0..6, 0..1);
+        }
+
         if self.batches.is_empty() {
             return;
         }
-        let proj = projection(viewport.0, viewport.1).to_cols_array();
-        gpu.queue
-            .write_buffer(&self.globals_buffer, 0, bytemuck::cast_slice(&proj));
-
         let needed = self.vertices.len() as u64;
         if needed > self.vertex_capacity {
             self.vertex_capacity = needed.next_power_of_two();
@@ -241,8 +284,6 @@ impl SpriteRenderer {
         gpu.queue
             .write_buffer(&self.vertex_buffer, 0, bytemuck::cast_slice(&self.vertices));
 
-        pass.set_pipeline(&self.pipeline);
-        pass.set_bind_group(0, &self.globals_bind_group, &[]);
         pass.set_vertex_buffer(0, self.vertex_buffer.slice(..));
         for batch in &self.batches {
             let Some(bind_group) = self.texture_bind_groups.get(&batch.texture_id) else {

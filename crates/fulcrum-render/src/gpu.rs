@@ -81,7 +81,23 @@ pub(crate) fn render(world: &mut World) {
 }
 
 fn render_with(world: &mut World, renderer: &mut crate::batch::SpriteRenderer) {
-    let clear = world.resource::<FulcrumConfig>().clear_color;
+    let configured_clear = world.resource::<FulcrumConfig>().clear_color;
+    let camera_frame = {
+        let camera = world.resource::<crate::camera::Camera2D>();
+        let config = &world.resource::<GpuContext>().surface_config;
+        camera.frame(fulcrum_core::vec2(
+            config.width as f32,
+            config.height as f32,
+        ))
+    };
+    // With bars showing, the pass clears to black (the bars) and the renderer paints the
+    // configured color inside the viewport; without bars, clear straight to the configured
+    // color.
+    let clear = if camera_frame.letterboxed {
+        fulcrum_core::Color::BLACK
+    } else {
+        configured_clear
+    };
     let gpu = world.resource::<GpuContext>();
 
     let frame = match gpu.surface.get_current_texture() {
@@ -134,11 +150,18 @@ fn render_with(world: &mut World, renderer: &mut crate::batch::SpriteRenderer) {
             occlusion_query_set: None,
             multiview_mask: None,
         });
-        let viewport = (
-            gpu.surface_config.width as f32,
-            gpu.surface_config.height as f32,
-        );
-        renderer.draw(gpu, viewport, &mut pass);
+        if camera_frame.letterboxed {
+            let origin = camera_frame.viewport_origin;
+            let size = camera_frame.viewport_size;
+            pass.set_viewport(origin.x, origin.y, size.x, size.y, 0.0, 1.0);
+            pass.set_scissor_rect(
+                origin.x as u32,
+                origin.y as u32,
+                size.x as u32,
+                size.y as u32,
+            );
+        }
+        renderer.draw(gpu, &camera_frame, configured_clear, &mut pass);
     }
     gpu.queue.submit(Some(encoder.finish()));
     gpu.queue.present(frame);

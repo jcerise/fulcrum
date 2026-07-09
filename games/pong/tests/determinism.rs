@@ -40,7 +40,7 @@ fn run(seed: u64, ticks: u32) -> Outcome {
         {
             let mut input = app.world_mut().resource_mut::<Input>();
             script(&mut input, tick);
-            input.sample(vec2(800.0, 600.0));
+            input.sample(|screen| screen);
         }
         app.tick();
     }

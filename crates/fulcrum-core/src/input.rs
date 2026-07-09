@@ -180,9 +180,10 @@ impl Input {
         self.pending.scroll += delta;
     }
 
-    /// Drain queued events into the readable state for the next tick. Called by the runner
-    /// once per fixed tick with the viewport size in physical pixels.
-    pub fn sample(&mut self, viewport: Vec2) {
+    /// Drain queued events into the readable state for the next tick. Called by the runner once
+    /// per fixed tick; `screen_to_world` maps the cursor through the active camera (headless
+    /// harnesses pass whatever mapping — or `|s| s` — they need).
+    pub fn sample(&mut self, screen_to_world: impl Fn(Vec2) -> Vec2) {
         self.just_pressed.clear();
         self.just_released.clear();
         self.mouse_just_pressed.clear();
@@ -209,12 +210,7 @@ impl Input {
         if let Some(screen) = self.pending.cursor.take() {
             self.mouse_screen = screen;
         }
-        // Phase-1 projection: origin at window center, +Y up, 1 unit = 1 pixel. A future
-        // Camera2D replaces this mapping.
-        self.mouse_world = Vec2::new(
-            self.mouse_screen.x - viewport.x / 2.0,
-            viewport.y / 2.0 - self.mouse_screen.y,
-        );
+        self.mouse_world = screen_to_world(self.mouse_screen);
         self.scroll_delta = self.pending.scroll;
         self.pending.scroll = 0.0;
     }

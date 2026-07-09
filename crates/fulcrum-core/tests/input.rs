@@ -2,27 +2,30 @@
 
 use fulcrum_core::{Input, Key, MouseButton, vec2};
 
-const VIEWPORT: fulcrum_core::Vec2 = fulcrum_core::Vec2::new(800.0, 600.0);
+/// The phase-1 naive mapping (center origin, +Y up) for an 800x600 window.
+fn to_world(screen: fulcrum_core::Vec2) -> fulcrum_core::Vec2 {
+    vec2(screen.x - 400.0, 300.0 - screen.y)
+}
 
 #[test]
 fn held_key_is_pressed_every_tick_but_just_pressed_once() {
     let mut input = Input::default();
     input.push_key(Key::W, true);
 
-    input.sample(VIEWPORT); // tick 1: the press arrives
+    input.sample(to_world); // tick 1: the press arrives
     assert!(input.pressed(Key::W));
     assert!(input.just_pressed(Key::W));
 
-    input.sample(VIEWPORT); // tick 2: still held, no new events
+    input.sample(to_world); // tick 2: still held, no new events
     assert!(input.pressed(Key::W));
     assert!(!input.just_pressed(Key::W));
 
     input.push_key(Key::W, false);
-    input.sample(VIEWPORT); // tick 3: released
+    input.sample(to_world); // tick 3: released
     assert!(!input.pressed(Key::W));
     assert!(input.just_released(Key::W));
 
-    input.sample(VIEWPORT); // tick 4: edge flags cleared
+    input.sample(to_world); // tick 4: edge flags cleared
     assert!(!input.just_released(Key::W));
 }
 
@@ -33,7 +36,7 @@ fn press_and_release_between_ticks_is_not_lost() {
     input.push_key(Key::Space, true);
     input.push_key(Key::Space, false);
 
-    input.sample(VIEWPORT);
+    input.sample(to_world);
     assert!(input.just_pressed(Key::Space), "press edge preserved");
     assert!(input.just_released(Key::Space), "release edge preserved");
     assert!(!input.pressed(Key::Space), "key is up after the tap");
@@ -46,7 +49,7 @@ fn mouse_buttons_and_scroll_sample_per_tick() {
     input.push_scroll(2.0);
     input.push_scroll(1.0);
 
-    input.sample(VIEWPORT);
+    input.sample(to_world);
     assert!(input.mouse_pressed(MouseButton::Left));
     assert!(input.mouse_just_pressed(MouseButton::Left));
     assert_eq!(
@@ -55,7 +58,7 @@ fn mouse_buttons_and_scroll_sample_per_tick() {
         "scroll accumulates within a tick"
     );
 
-    input.sample(VIEWPORT);
+    input.sample(to_world);
     assert!(!input.mouse_just_pressed(MouseButton::Left));
     assert_eq!(input.scroll_delta(), 0.0, "scroll resets next tick");
 }
@@ -65,12 +68,12 @@ fn mouse_world_uses_center_origin_y_up() {
     let mut input = Input::default();
     // Top-left corner of an 800x600 window.
     input.push_cursor(vec2(0.0, 0.0));
-    input.sample(VIEWPORT);
+    input.sample(to_world);
     assert_eq!(input.mouse_world(), vec2(-400.0, 300.0));
 
     // Window center.
     input.push_cursor(vec2(400.0, 300.0));
-    input.sample(VIEWPORT);
+    input.sample(to_world);
     assert_eq!(input.mouse_world(), vec2(0.0, 0.0));
     assert_eq!(input.mouse_screen(), vec2(400.0, 300.0));
 }
