@@ -1516,6 +1516,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "grove"
+version = "0.1.0"
+dependencies = [
+ "bevy_ecs",
+ "env_logger",
+ "fulcrum",
+ "image",
+ "serde",
+]
+
+[[package]]
 name = "guillotiere"
 version = "0.7.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"

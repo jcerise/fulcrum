@@ -26,6 +26,15 @@ first-class feature.
 - `crates/fulcrum-asset` — asset handles, storage, loaders.
 - `games/` — milestone games that dogfood the engine (`pong`, then asteroids, dungeon, RTS slice).
 
+## Learning Fulcrum
+
+**Start with [The Fulcrum Book](book/src/SUMMARY.md)** — it teaches the whole engine by
+building a small game (`games/grove`) from an empty window up. Build the rendered version
+with `mdbook build book` (output in `book/built/`). Every chapter's complete program compiles
+in CI as an example: `cargo run -p grove --example ch01_window`.
+
 ## Status
 
-Pre-alpha; phase 1 (core skeleton, milestone: Pong) in progress. Build plans live in `plans/`.
+Pre-alpha. Phases 1-3 complete (core, 2D essentials, data-driven layer); phase 4 (modding,
+particles, pathfinding, replays) is planned. Build plans live in `plans/`; the milestone
+games in `games/` double as integration tests.

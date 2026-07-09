@@ -1,0 +1,12 @@
+[book]
+title = "The Fulcrum Book"
+description = "Learn the Fulcrum 2D game engine by building a game from scratch."
+authors = ["The Fulcrum contributors"]
+language = "en"
+
+[build]
+build-dir = "built"
+
+[output.html]
+default-theme = "ayu"
+preferred-dark-theme = "ayu"
