@@ -17,6 +17,18 @@ use winit::window::{Window, WindowId};
 
 use crate::gpu::{self, GpuContext};
 
+/// The winit window, for integrations that need raw access (egui). Inserted once created.
+#[derive(Resource, Clone)]
+pub struct WindowHandle(pub Arc<Window>);
+
+/// Raw window-event hooks (egui and friends). Each returns `true` to consume the event —
+/// consumed input events don't reach the game's `Input`.
+#[derive(Resource, Default)]
+pub struct WindowEventHooks(
+    #[allow(clippy::type_complexity)]
+    pub  Vec<Box<dyn Fn(&mut bevy_ecs::world::World, &WindowEvent) -> bool + Send + Sync>>,
+);
+
 /// Longest frame the accumulator will absorb, in seconds. A stall longer than this (breakpoint,
 /// laptop lid, ...) slows the simulation down instead of firing a catch-up burst of ticks.
 const MAX_FRAME_TIME: f32 = 0.25;
@@ -45,6 +57,9 @@ impl Plugin for WindowPlugin {
             height,
             scale_factor: 1.0,
         });
+        if app.world().get_resource::<WindowEventHooks>().is_none() {
+            app.world_mut().insert_resource(WindowEventHooks::default());
+        }
         if app.world().get_resource::<AssetServer>().is_none() {
             app.world_mut().insert_resource(AssetServer::default());
         }
@@ -220,12 +235,36 @@ impl ApplicationHandler for WinitApp {
         self.app
             .world_mut()
             .insert_resource(crate::texture::WhitePixel(white));
+        self.app
+            .world_mut()
+            .insert_resource(WindowHandle(window.clone()));
         self.window = Some(window);
 
         self.app.run_startup();
     }
 
     fn window_event(&mut self, event_loop: &ActiveEventLoop, _id: WindowId, event: WindowEvent) {
+        // Integrations (egui) see events first; consumed input events skip game input.
+        let consumed = {
+            let world = self.app.world_mut();
+            if let Some(hooks) = world.remove_resource::<WindowEventHooks>() {
+                let consumed = hooks.0.iter().any(|hook| hook(world, &event));
+                world.insert_resource(hooks);
+                consumed
+            } else {
+                false
+            }
+        };
+        let is_input = matches!(
+            event,
+            WindowEvent::KeyboardInput { .. }
+                | WindowEvent::CursorMoved { .. }
+                | WindowEvent::MouseInput { .. }
+                | WindowEvent::MouseWheel { .. }
+        );
+        if consumed && is_input {
+            return;
+        }
         match event {
             WindowEvent::CloseRequested => event_loop.exit(),
             WindowEvent::Resized(size) => {

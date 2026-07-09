@@ -21,7 +21,7 @@ fulcrum-ui = { path = "crates/fulcrum-ui" }
 
 # external, pinned 2026-07-08
 bevy_ecs = "0.19"
-wgpu = "30.0"
+wgpu = "29.0"  # pinned to egui-wgpu's wgpu; bump together
 winit = "0.30"
 glam = { version = "0.33", features = ["serde"] }
 image = { version = "0.25", default-features = false, features = ["png"] }
@@ -36,6 +36,9 @@ env_logger = "0.11"
 fontdue = "0.9"
 kira = "0.12"
 notify = "8.2"
+egui = "0.35"
+egui-wgpu = "0.35"
+egui-winit = { version = "0.35", default-features = false, features = ["links"] }
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
 ron = "0.12"

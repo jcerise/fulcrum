@@ -45,6 +45,12 @@ pub use glam::{Vec2, vec2};
 // unlike std's RandomState maps. Sim systems must use these (see docs/determinism.md).
 pub use rustc_hash::{FxHashMap, FxHashSet};
 
+/// A human-readable entity name (shown by the inspector; registered as `"Name"` for prefabs).
+#[derive(
+    bevy_ecs::prelude::Component, Clone, Debug, Default, serde::Serialize, serde::Deserialize,
+)]
+pub struct Name(pub String);
+
 /// An RGBA color with `f32` components in `0.0..=1.0`.
 #[derive(Debug, Clone, Copy, PartialEq, serde::Serialize, serde::Deserialize)]
 pub struct Color {

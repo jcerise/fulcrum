@@ -2,6 +2,7 @@
 //! stacking; widgets (panel / label / button / image); RON layout files with hot reload; and
 //! pointer interaction surfaced as [`UiEvent`]s the simulation can read.
 
+pub mod debug;
 pub mod extract;
 pub mod interact;
 pub mod layout;
@@ -11,6 +12,7 @@ pub mod widgets;
 
 use fulcrum_core::{Fulcrum, IntoScheduleConfigs, Plugin, Update};
 
+pub use debug::{DebugUi, DebugUiFocus, DebugUiPlugin};
 pub use interact::{UiEvent, UiFocus};
 pub use loader::{UiLoader, UiQuery};
 pub use node::{Anchor, StackDir, UiId, UiNode, UiRect, UiRootPath, UiSize};

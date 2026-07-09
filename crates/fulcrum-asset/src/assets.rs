@@ -74,6 +74,17 @@ impl<T: Send + Sync + 'static> Assets<T> {
         self.items.get_mut(handle.id() as usize)
     }
 
+    /// Iterate registered (path, handle) pairs, sorted by path (inspector/debug use).
+    pub fn paths(&self) -> Vec<(&str, Handle<T>)> {
+        let mut entries: Vec<(&str, Handle<T>)> = self
+            .by_path
+            .iter()
+            .map(|(path, id)| (path.as_str(), Handle::new(*id)))
+            .collect();
+        entries.sort_by_key(|(path, _)| *path);
+        entries
+    }
+
     /// Number of stored assets.
     pub fn len(&self) -> usize {
         self.items.len()

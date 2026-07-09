@@ -95,6 +95,7 @@ impl Plugin for ScenePlugin {
         {
             let mut registry = registry_mut(app);
             registry.register::<Transform2D>("Transform2D");
+            registry.register::<fulcrum_core::Name>("Name");
             registry.register::<SpriteDef>("Sprite");
             registry.register::<TextDef>("Text");
             registry.register::<AnimationPlayerDef>("AnimationPlayer");

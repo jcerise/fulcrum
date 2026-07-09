@@ -40,6 +40,9 @@ impl Plugin for DefaultPlugins {
         fulcrum_anim::AnimPlugin.build(app);
         fulcrum_scene::ScenePlugin.build(app);
         fulcrum_ui::UiPlugin.build(app);
+        if cfg!(debug_assertions) {
+            fulcrum_ui::DebugUiPlugin.build(app);
+        }
     }
 }
 
@@ -59,7 +62,7 @@ pub mod prelude {
         Res, ResMut, Resource, SimRng, Startup, Time, Transform2D, Update, Vec2, With, Without,
         World, vec2,
     };
-    pub use fulcrum_core::{Children, Parent};
+    pub use fulcrum_core::{Children, Name, Parent};
     pub use fulcrum_render::{
         AssetLoader, Camera2D, DefaultFont, Font, Gizmos, HAlign, RenderStats, ScalingMode, Sprite,
         SpriteRegion, SpriteSheet, Text, Texture, TileLayer, Tilemap, TilemapAsset, TilemapLoader,
@@ -71,7 +74,8 @@ pub mod prelude {
         SceneSpawner, SpawnPrefabExt, SpriteDef, TextDef, TilemapDef, save_world,
     };
     pub use fulcrum_ui::{
-        Anchor, ButtonStyle, StackDir, UiButton, UiEvent, UiFocus, UiId, UiImage, UiLabel,
-        UiLoader, UiNode, UiPanel, UiPlugin, UiQuery, UiRect, UiSize,
+        Anchor, ButtonStyle, DebugUi, DebugUiFocus, DebugUiPlugin, StackDir, UiButton, UiEvent,
+        UiFocus, UiId, UiImage, UiLabel, UiLoader, UiNode, UiPanel, UiPlugin, UiQuery, UiRect,
+        UiSize,
     };
 }

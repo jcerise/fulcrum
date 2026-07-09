@@ -132,7 +132,7 @@ impl SpriteRenderer {
                 module: &shader,
                 entry_point: Some("vs_main"),
                 compilation_options: Default::default(),
-                buffers: &[Some(VERTEX_LAYOUT)],
+                buffers: &[VERTEX_LAYOUT],
             },
             fragment: Some(wgpu::FragmentState {
                 module: &shader,
@@ -212,12 +212,12 @@ impl SpriteRenderer {
                 module: &gizmo_shader,
                 entry_point: Some("vs_main"),
                 compilation_options: Default::default(),
-                buffers: &[Some(wgpu::VertexBufferLayout {
+                buffers: &[wgpu::VertexBufferLayout {
                     array_stride: std::mem::size_of::<crate::gizmos::GizmoVertex>()
                         as wgpu::BufferAddress,
                     step_mode: wgpu::VertexStepMode::Vertex,
                     attributes: &wgpu::vertex_attr_array![0 => Float32x2, 1 => Float32x4],
-                })],
+                }],
             },
             fragment: Some(wgpu::FragmentState {
                 module: &gizmo_shader,

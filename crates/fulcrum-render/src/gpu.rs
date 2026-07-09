@@ -70,6 +70,14 @@ pub(crate) fn init(window: Arc<Window>, width: u32, height: u32) -> GpuContext {
     }
 }
 
+/// A post-main-pass render hook (egui overlay): runs with the frame's encoder and target view
+/// after world/UI/gizmo drawing, before submit.
+#[derive(Resource)]
+pub struct RenderOverlay(
+    #[allow(clippy::type_complexity)]
+    pub  Box<dyn Fn(&mut World, &mut wgpu::CommandEncoder, &wgpu::TextureView) + Send + Sync>,
+);
+
 /// Render one frame: acquire the surface texture, clear it to the configured color, draw the
 /// sprite batches, present.
 pub(crate) fn render(world: &mut World) {
@@ -111,15 +119,36 @@ fn render_with(world: &mut World, renderer: &mut crate::batch::SpriteRenderer) {
     // Take this frame's gizmo lines (hand the allocation back, cleared, afterwards).
     let mut gizmo_vertices =
         std::mem::take(&mut world.resource_mut::<crate::gizmos::Gizmos>().vertices);
-    let gpu = world.resource::<GpuContext>();
 
-    let frame = match gpu.surface.get_current_texture() {
-        wgpu::CurrentSurfaceTexture::Success(frame) => frame,
-        // Still usable this frame; the next Resized event reconfigures properly.
-        wgpu::CurrentSurfaceTexture::Suboptimal(frame) => frame,
-        // Nothing to draw to right now; skip the frame.
-        wgpu::CurrentSurfaceTexture::Timeout | wgpu::CurrentSurfaceTexture::Occluded => return,
-        wgpu::CurrentSurfaceTexture::Outdated | wgpu::CurrentSurfaceTexture::Lost => {
+    enum Acquired {
+        Frame(wgpu::SurfaceTexture),
+        Skip,
+        Reconfigure,
+    }
+    let (device, queue, acquired) = {
+        let gpu = world.resource::<GpuContext>();
+        let acquired = match gpu.surface.get_current_texture() {
+            wgpu::CurrentSurfaceTexture::Success(frame) => Acquired::Frame(frame),
+            // Still usable this frame; the next Resized event reconfigures properly.
+            wgpu::CurrentSurfaceTexture::Suboptimal(frame) => Acquired::Frame(frame),
+            // Nothing to draw to right now; skip the frame.
+            wgpu::CurrentSurfaceTexture::Timeout | wgpu::CurrentSurfaceTexture::Occluded => {
+                Acquired::Skip
+            }
+            wgpu::CurrentSurfaceTexture::Outdated | wgpu::CurrentSurfaceTexture::Lost => {
+                Acquired::Reconfigure
+            }
+            wgpu::CurrentSurfaceTexture::Validation => {
+                log::error!("surface texture acquisition failed validation; exiting");
+                std::process::exit(1);
+            }
+        };
+        (gpu.device.clone(), gpu.queue.clone(), acquired)
+    };
+    let frame = match acquired {
+        Acquired::Frame(frame) => frame,
+        Acquired::Skip => return,
+        Acquired::Reconfigure => {
             let (width, height) = {
                 let config = &world.resource::<GpuContext>().surface_config;
                 (config.width, config.height)
@@ -127,21 +156,16 @@ fn render_with(world: &mut World, renderer: &mut crate::batch::SpriteRenderer) {
             world.resource_mut::<GpuContext>().resize(width, height);
             return;
         }
-        wgpu::CurrentSurfaceTexture::Validation => {
-            log::error!("surface texture acquisition failed validation; exiting");
-            std::process::exit(1);
-        }
     };
 
     let view = frame
         .texture
         .create_view(&wgpu::TextureViewDescriptor::default());
-    let mut encoder = gpu
-        .device
-        .create_command_encoder(&wgpu::CommandEncoderDescriptor {
-            label: Some("fulcrum frame"),
-        });
+    let mut encoder = device.create_command_encoder(&wgpu::CommandEncoderDescriptor {
+        label: Some("fulcrum frame"),
+    });
     {
+        let gpu = world.resource::<GpuContext>();
         let mut pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
             label: Some("main"),
             color_attachments: &[Some(wgpu::RenderPassColorAttachment {
@@ -178,8 +202,13 @@ fn render_with(world: &mut World, renderer: &mut crate::batch::SpriteRenderer) {
         renderer.draw_ui(gpu, &camera_frame, &mut pass);
         renderer.draw_gizmos(gpu, &gizmo_vertices, &mut pass);
     }
-    gpu.queue.submit(Some(encoder.finish()));
-    gpu.queue.present(frame);
+    // Overlay integrations (egui) draw last, into the same frame.
+    if let Some(overlay) = world.remove_resource::<RenderOverlay>() {
+        (overlay.0)(world, &mut encoder, &view);
+        world.insert_resource(overlay);
+    }
+    queue.submit(Some(encoder.finish()));
+    frame.present();
     gizmo_vertices.clear();
     world.resource_mut::<crate::gizmos::Gizmos>().vertices = gizmo_vertices;
 }
