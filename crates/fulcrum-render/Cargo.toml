@@ -1,0 +1,21 @@
+[package]
+name = "fulcrum-render"
+description = "Fulcrum rendering: winit window and event loop, wgpu backend, sprite batching."
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[dependencies]
+fulcrum-core = { workspace = true }
+fulcrum-asset = { workspace = true }
+bevy_ecs = { workspace = true }
+wgpu = { workspace = true }
+winit = { workspace = true }
+glam = { workspace = true }
+bytemuck = { workspace = true }
+image = { workspace = true }
+pollster = { workspace = true }
+rustc-hash = { workspace = true }
+thiserror = { workspace = true }
+log = { workspace = true }
