@@ -7,6 +7,7 @@
 //! to name those dependencies directly.
 
 pub mod app;
+pub mod hierarchy;
 pub mod input;
 pub mod math;
 pub mod plugin;
@@ -16,6 +17,7 @@ pub mod time;
 pub mod transform;
 
 pub use app::{DEFAULT_SEED, Fulcrum, FulcrumConfig};
+pub use hierarchy::{Children, Parent};
 pub use input::{Input, Key, MouseButton};
 pub use math::Rect;
 pub use plugin::Plugin;

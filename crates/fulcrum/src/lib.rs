@@ -57,13 +57,15 @@ pub mod prelude {
         Res, ResMut, Resource, SimRng, Startup, Time, Transform2D, Update, Vec2, With, Without,
         World, vec2,
     };
+    pub use fulcrum_core::{Children, Parent};
     pub use fulcrum_render::{
         AssetLoader, Camera2D, DefaultFont, Font, Gizmos, HAlign, RenderStats, ScalingMode, Sprite,
         SpriteRegion, SpriteSheet, Text, Texture, TileLayer, Tilemap, TilemapAsset, TilemapLoader,
         WindowInfo, WindowPlugin,
     };
     pub use fulcrum_scene::{
-        AnimationPlayerDef, ComponentRegistry, RegisterComponentExt, SceneError, ScenePlugin,
-        SpriteDef, TextDef, TilemapDef,
+        AnimationPlayerDef, ComponentRegistry, PrefabAsset, PrefabLoader, RegisterComponentExt,
+        SceneAsset, SceneError, SceneLoader, SceneMember, ScenePlugin, SceneSpawner,
+        SpawnPrefabExt, SpriteDef, TextDef, TilemapDef, save_world,
     };
 }
