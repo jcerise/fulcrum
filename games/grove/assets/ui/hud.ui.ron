@@ -1,0 +1,21 @@
+Ui(root: Node(
+    anchor: TopLeft, size: Fill,
+    children: [
+        Node(
+            anchor: TopLeft, offset: (8, 8), size: Fit,
+            kind: Panel(color: (r: 0.0, g: 0.0, b: 0.0, a: 0.5)),
+            children: [
+                Node(id: "gems", kind: Label(text: "Gems: 0/8", size: 16)),
+            ],
+        ),
+        Node(
+            id: "banner", visible: false,
+            anchor: Center, pivot: (0.5, 0.5), size: Fit, stack: Vertical(6),
+            kind: Panel(color: (r: 0.03, g: 0.05, b: 0.03, a: 0.9)),
+            children: [
+                Node(id: "banner_text", kind: Label(text: "", size: 24)),
+                Node(kind: Label(text: "press Enter", size: 8, color: (r: 0.8, g: 0.8, b: 0.8, a: 1.0))),
+            ],
+        ),
+    ],
+))

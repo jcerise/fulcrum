@@ -1,0 +1,10 @@
+Prefab(
+    components: {
+        "Name": ("fox"),
+        "Transform2D": (),
+        "Sprite": (sheet: "creatures.json", region: "fox 0", z: 4.0),
+        "AnimationPlayer": (clip: "creatures.json#fox"),
+        "FoxTag": (),
+        "MoveStats": (speed: 84.0),
+    },
+)

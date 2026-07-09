@@ -1,0 +1,12 @@
+StateMachine(
+    initial: "idle",
+    params: { "speed": Float(0.0) },
+    states: {
+        "idle": (clip: "creatures.json#player_idle"),
+        "run":  (clip: "creatures.json#player_run"),
+    },
+    transitions: [
+        (from: State("idle"), to: "run",  when: [Gt("speed", 5.0)]),
+        (from: State("run"),  to: "idle", when: [Lt("speed", 5.0)]),
+    ],
+)

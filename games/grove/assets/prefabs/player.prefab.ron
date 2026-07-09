@@ -1,0 +1,10 @@
+Prefab(
+    components: {
+        "Name": ("player"),
+        "Transform2D": (translation: (72.0, 72.0)),
+        "Sprite": (sheet: "creatures.json", region: "player idle 0", z: 5.0),
+        "Animator": (machine: "anim/player.animsm.ron"),
+        "PlayerTag": (),
+        "MoveStats": (speed: 110.0),
+    },
+)

@@ -1,0 +1,9 @@
+Prefab(
+    components: {
+        "Name": ("gem"),
+        "Transform2D": (),
+        "Sprite": (sheet: "creatures.json", region: "gem 0", z: 3.0),
+        "AnimationPlayer": (clip: "creatures.json#gem"),
+        "GemTag": (),
+    },
+)

@@ -1,0 +1,17 @@
+[package]
+name = "grove"
+description = "The Fulcrum Book's tutorial game: collect the gems, dodge the fox."
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[dependencies]
+fulcrum = { workspace = true }
+env_logger = { workspace = true }
+serde = { workspace = true }
+# Manifest-only: lets #[derive(Component)] resolve the `bevy_ecs::` paths it generates.
+bevy_ecs = { workspace = true }
+
+[dev-dependencies]
+image = { workspace = true }

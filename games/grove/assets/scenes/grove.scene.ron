@@ -1,0 +1,15 @@
+Scene(
+    entities: [
+        ( components: { "Name": ("map"), "Transform2D": (), "Tilemap": (asset: "maps/grove.map.ron") } ),
+        ( prefab: "prefabs/player.prefab.ron" ),
+        ( prefab: "prefabs/fox.prefab.ron", at: (520.0, 300.0) ),
+        ( prefab: "prefabs/gem.prefab.ron", at: (150.0, 260.0) ),
+        ( prefab: "prefabs/gem.prefab.ron", at: (300.0, 90.0) ),
+        ( prefab: "prefabs/gem.prefab.ron", at: (430.0, 200.0) ),
+        ( prefab: "prefabs/gem.prefab.ron", at: (560.0, 90.0) ),
+        ( prefab: "prefabs/gem.prefab.ron", at: (90.0, 330.0) ),
+        ( prefab: "prefabs/gem.prefab.ron", at: (340.0, 330.0) ),
+        ( prefab: "prefabs/gem.prefab.ron", at: (590.0, 340.0) ),
+        ( prefab: "prefabs/gem.prefab.ron", at: (210.0, 170.0) ),
+    ],
+)
