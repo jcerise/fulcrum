@@ -36,6 +36,7 @@ pub struct DefaultPlugins;
 impl Plugin for DefaultPlugins {
     fn build(&self, app: &mut Fulcrum) {
         fulcrum_render::WindowPlugin.build(app);
+        fulcrum_audio::AudioPlugin.build(app);
     }
 }
 
@@ -43,6 +44,7 @@ impl Plugin for DefaultPlugins {
 pub mod prelude {
     pub use crate::DefaultPlugins;
     pub use fulcrum_asset::{AssetServer, Assets, Handle};
+    pub use fulcrum_audio::{Audio, AudioPlugin, PlayParams, Sound, SoundLoader};
     pub use fulcrum_core::{
         Added, Bundle, Changed, Color, Commands, Component, DEFAULT_SEED, Entity, Event,
         EventReader, EventWriter, FixedUpdate, Fulcrum, FulcrumConfig, FxHashMap, FxHashSet, Input,
