@@ -98,6 +98,9 @@ fn render_with(world: &mut World, renderer: &mut crate::batch::SpriteRenderer) {
     } else {
         configured_clear
     };
+    // Take this frame's gizmo lines (hand the allocation back, cleared, afterwards).
+    let mut gizmo_vertices =
+        std::mem::take(&mut world.resource_mut::<crate::gizmos::Gizmos>().vertices);
     let gpu = world.resource::<GpuContext>();
 
     let frame = match gpu.surface.get_current_texture() {
@@ -162,7 +165,10 @@ fn render_with(world: &mut World, renderer: &mut crate::batch::SpriteRenderer) {
             );
         }
         renderer.draw(gpu, &camera_frame, configured_clear, &mut pass);
+        renderer.draw_gizmos(gpu, &gizmo_vertices, &mut pass);
     }
     gpu.queue.submit(Some(encoder.finish()));
     gpu.queue.present(frame);
+    gizmo_vertices.clear();
+    world.resource_mut::<crate::gizmos::Gizmos>().vertices = gizmo_vertices;
 }

@@ -28,6 +28,9 @@ pub struct FulcrumConfig {
     pub seed: u64,
     /// Color the window is cleared to each frame.
     pub clear_color: Color,
+    /// Whether debug gizmos draw. Defaults to true in debug builds, false in release, so
+    /// shipped games don't pay for stray debug overlays.
+    pub gizmos_enabled: bool,
 }
 
 impl Default for FulcrumConfig {
@@ -38,6 +41,7 @@ impl Default for FulcrumConfig {
             tick_rate: 60,
             seed: DEFAULT_SEED,
             clear_color: Color::BLACK,
+            gizmos_enabled: cfg!(debug_assertions),
         }
     }
 }
