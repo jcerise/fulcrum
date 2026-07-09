@@ -1,0 +1,369 @@
+//! The sprite batcher: collects all sprites each frame, sorts by `(z, texture)`, and draws them
+//! in as few draw calls as possible.
+
+use bevy_ecs::prelude::{Query, Res, ResMut, Resource};
+use bytemuck::{Pod, Zeroable};
+use fulcrum_asset::{Assets, Handle};
+use fulcrum_core::{PreviousTransform2D, Time, Transform2D, Vec2};
+use glam::Mat4;
+use rustc_hash::FxHashMap;
+
+use crate::gpu::GpuContext;
+use crate::sprite::Sprite;
+use crate::texture::Texture;
+
+/// Per-frame render statistics, readable by games and logged for the batching acceptance
+/// criteria.
+#[derive(Resource, Default, Debug, Clone, Copy)]
+pub struct RenderStats {
+    /// Sprites drawn last frame.
+    pub sprites: usize,
+    /// Draw calls issued for sprites last frame.
+    pub batches: usize,
+}
+
+#[repr(C)]
+#[derive(Clone, Copy, Pod, Zeroable)]
+struct SpriteVertex {
+    position: [f32; 2],
+    uv: [f32; 2],
+    color: [f32; 4],
+}
+
+const VERTEX_LAYOUT: wgpu::VertexBufferLayout<'static> = wgpu::VertexBufferLayout {
+    array_stride: std::mem::size_of::<SpriteVertex>() as wgpu::BufferAddress,
+    step_mode: wgpu::VertexStepMode::Vertex,
+    attributes: &wgpu::vertex_attr_array![0 => Float32x2, 1 => Float32x2, 2 => Float32x4],
+};
+
+/// One contiguous run of vertices sharing a texture: a single draw call.
+struct Batch {
+    texture_id: u32,
+    vertex_range: std::ops::Range<u32>,
+}
+
+/// The sprite rendering pipeline and per-frame vertex data. Created by the window plugin once
+/// the GPU exists.
+#[derive(Resource)]
+pub struct SpriteRenderer {
+    pipeline: wgpu::RenderPipeline,
+    globals_buffer: wgpu::Buffer,
+    globals_bind_group: wgpu::BindGroup,
+    texture_layout: wgpu::BindGroupLayout,
+    sampler: wgpu::Sampler,
+    texture_bind_groups: FxHashMap<u32, wgpu::BindGroup>,
+    vertex_buffer: wgpu::Buffer,
+    vertex_capacity: u64,
+    vertices: Vec<SpriteVertex>,
+    batches: Vec<Batch>,
+}
+
+/// The world-to-clip projection: origin at window center, +Y up, 1 world unit = 1 pixel.
+/// The single function a future `Camera2D` replaces. DirectX convention matches wgpu's NDC
+/// (Y-up, Z in `[0, 1]`).
+fn projection(viewport_width: f32, viewport_height: f32) -> Mat4 {
+    glam::camera::rh::proj::directx::orthographic(
+        -viewport_width / 2.0,
+        viewport_width / 2.0,
+        -viewport_height / 2.0,
+        viewport_height / 2.0,
+        -1.0,
+        1.0,
+    )
+}
+
+const INITIAL_VERTEX_CAPACITY: u64 = 6 * 1024; // vertices, not bytes
+
+impl SpriteRenderer {
+    /// Build the pipeline against the surface format.
+    pub(crate) fn new(device: &wgpu::Device, surface_format: wgpu::TextureFormat) -> Self {
+        let shader = device.create_shader_module(wgpu::include_wgsl!("shader.wgsl"));
+
+        let globals_layout = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
+            label: Some("sprite globals layout"),
+            entries: &[wgpu::BindGroupLayoutEntry {
+                binding: 0,
+                visibility: wgpu::ShaderStages::VERTEX,
+                ty: wgpu::BindingType::Buffer {
+                    ty: wgpu::BufferBindingType::Uniform,
+                    has_dynamic_offset: false,
+                    min_binding_size: None,
+                },
+                count: None,
+            }],
+        });
+        let texture_layout = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
+            label: Some("sprite texture layout"),
+            entries: &[
+                wgpu::BindGroupLayoutEntry {
+                    binding: 0,
+                    visibility: wgpu::ShaderStages::FRAGMENT,
+                    ty: wgpu::BindingType::Texture {
+                        sample_type: wgpu::TextureSampleType::Float { filterable: true },
+                        view_dimension: wgpu::TextureViewDimension::D2,
+                        multisampled: false,
+                    },
+                    count: None,
+                },
+                wgpu::BindGroupLayoutEntry {
+                    binding: 1,
+                    visibility: wgpu::ShaderStages::FRAGMENT,
+                    ty: wgpu::BindingType::Sampler(wgpu::SamplerBindingType::Filtering),
+                    count: None,
+                },
+            ],
+        });
+
+        let pipeline_layout = device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
+            label: Some("sprite pipeline layout"),
+            bind_group_layouts: &[Some(&globals_layout), Some(&texture_layout)],
+            immediate_size: 0,
+        });
+        let pipeline = device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
+            label: Some("sprite pipeline"),
+            layout: Some(&pipeline_layout),
+            vertex: wgpu::VertexState {
+                module: &shader,
+                entry_point: Some("vs_main"),
+                compilation_options: Default::default(),
+                buffers: &[Some(VERTEX_LAYOUT)],
+            },
+            fragment: Some(wgpu::FragmentState {
+                module: &shader,
+                entry_point: Some("fs_main"),
+                compilation_options: Default::default(),
+                targets: &[Some(wgpu::ColorTargetState {
+                    format: surface_format,
+                    blend: Some(wgpu::BlendState::ALPHA_BLENDING),
+                    write_mask: wgpu::ColorWrites::ALL,
+                })],
+            }),
+            primitive: wgpu::PrimitiveState::default(),
+            depth_stencil: None,
+            multisample: wgpu::MultisampleState::default(),
+            multiview_mask: None,
+            cache: None,
+        });
+
+        let globals_buffer = device.create_buffer(&wgpu::BufferDescriptor {
+            label: Some("sprite globals"),
+            size: std::mem::size_of::<Mat4>() as u64,
+            usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
+            mapped_at_creation: false,
+        });
+        let globals_bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
+            label: Some("sprite globals"),
+            layout: &globals_layout,
+            entries: &[wgpu::BindGroupEntry {
+                binding: 0,
+                resource: globals_buffer.as_entire_binding(),
+            }],
+        });
+
+        let sampler = device.create_sampler(&wgpu::SamplerDescriptor {
+            label: Some("sprite sampler (nearest)"),
+            mag_filter: wgpu::FilterMode::Nearest,
+            min_filter: wgpu::FilterMode::Nearest,
+            ..Default::default()
+        });
+
+        let vertex_buffer = Self::create_vertex_buffer(device, INITIAL_VERTEX_CAPACITY);
+
+        Self {
+            pipeline,
+            globals_buffer,
+            globals_bind_group,
+            texture_layout,
+            sampler,
+            texture_bind_groups: FxHashMap::default(),
+            vertex_buffer,
+            vertex_capacity: INITIAL_VERTEX_CAPACITY,
+            vertices: Vec::new(),
+            batches: Vec::new(),
+        }
+    }
+
+    fn create_vertex_buffer(device: &wgpu::Device, capacity: u64) -> wgpu::Buffer {
+        device.create_buffer(&wgpu::BufferDescriptor {
+            label: Some("sprite vertices"),
+            size: capacity * std::mem::size_of::<SpriteVertex>() as u64,
+            usage: wgpu::BufferUsages::VERTEX | wgpu::BufferUsages::COPY_DST,
+            mapped_at_creation: false,
+        })
+    }
+
+    fn bind_group_for(
+        &mut self,
+        gpu: &GpuContext,
+        texture_id: u32,
+        texture: &Texture,
+    ) -> &wgpu::BindGroup {
+        self.texture_bind_groups
+            .entry(texture_id)
+            .or_insert_with(|| {
+                gpu.device.create_bind_group(&wgpu::BindGroupDescriptor {
+                    label: Some("sprite texture"),
+                    layout: &self.texture_layout,
+                    entries: &[
+                        wgpu::BindGroupEntry {
+                            binding: 0,
+                            resource: wgpu::BindingResource::TextureView(&texture.view),
+                        },
+                        wgpu::BindGroupEntry {
+                            binding: 1,
+                            resource: wgpu::BindingResource::Sampler(&self.sampler),
+                        },
+                    ],
+                })
+            })
+    }
+
+    /// Upload this frame's vertices and record the sprite draws into `pass`. Called from the
+    /// frame render inside the clear pass.
+    pub(crate) fn draw(
+        &mut self,
+        gpu: &GpuContext,
+        viewport: (f32, f32),
+        pass: &mut wgpu::RenderPass<'_>,
+    ) {
+        if self.batches.is_empty() {
+            return;
+        }
+        let proj = projection(viewport.0, viewport.1).to_cols_array();
+        gpu.queue
+            .write_buffer(&self.globals_buffer, 0, bytemuck::cast_slice(&proj));
+
+        let needed = self.vertices.len() as u64;
+        if needed > self.vertex_capacity {
+            self.vertex_capacity = needed.next_power_of_two();
+            self.vertex_buffer = Self::create_vertex_buffer(&gpu.device, self.vertex_capacity);
+        }
+        gpu.queue
+            .write_buffer(&self.vertex_buffer, 0, bytemuck::cast_slice(&self.vertices));
+
+        pass.set_pipeline(&self.pipeline);
+        pass.set_bind_group(0, &self.globals_bind_group, &[]);
+        pass.set_vertex_buffer(0, self.vertex_buffer.slice(..));
+        for batch in &self.batches {
+            let Some(bind_group) = self.texture_bind_groups.get(&batch.texture_id) else {
+                continue;
+            };
+            pass.set_bind_group(1, bind_group, &[]);
+            pass.draw(batch.vertex_range.clone(), 0..1);
+        }
+    }
+}
+
+/// Collected per sprite before sorting.
+struct ExtractedSprite {
+    z: f32,
+    texture: Handle<Texture>,
+    corners: [Vec2; 4],
+    uv: [[f32; 2]; 4],
+    color: [f32; 4],
+}
+
+/// `PreRender` system: gather all visible sprites at their interpolated transforms, sort by
+/// `(z, texture)`, and build this frame's vertex list and batches.
+pub(crate) fn extract_sprites(
+    sprites: Query<(&Sprite, &Transform2D, &PreviousTransform2D)>,
+    textures: Res<Assets<Texture>>,
+    gpu: Res<GpuContext>,
+    time: Res<Time>,
+    mut renderer: ResMut<SpriteRenderer>,
+    mut stats: ResMut<RenderStats>,
+) {
+    let alpha = time.alpha;
+
+    let mut extracted: Vec<ExtractedSprite> = Vec::with_capacity(sprites.iter().len());
+    for (sprite, transform, previous) in &sprites {
+        let Some(texture) = textures.get(sprite.texture) else {
+            continue;
+        };
+        let interpolated = previous.0.lerp(transform, alpha);
+        let size = sprite
+            .custom_size
+            .unwrap_or(Vec2::new(texture.width as f32, texture.height as f32));
+
+        // Local corners in +Y-up space, anchor-relative, before rotation/scale.
+        let min = -sprite.anchor * size;
+        let max = min + size;
+        let locals = [
+            Vec2::new(min.x, min.y), // bottom-left
+            Vec2::new(max.x, min.y), // bottom-right
+            Vec2::new(max.x, max.y), // top-right
+            Vec2::new(min.x, max.y), // top-left
+        ];
+        let (sin, cos) = interpolated.rotation.sin_cos();
+        let corners = locals.map(|local| {
+            let scaled = local * interpolated.scale;
+            Vec2::new(
+                scaled.x * cos - scaled.y * sin,
+                scaled.x * sin + scaled.y * cos,
+            ) + interpolated.translation
+        });
+
+        // Texture space: v = 0 at the top; our bottom-left corner samples v = 1.
+        let (u0, u1) = if sprite.flip_x {
+            (1.0, 0.0)
+        } else {
+            (0.0, 1.0)
+        };
+        let (v_top, v_bottom) = if sprite.flip_y {
+            (1.0, 0.0)
+        } else {
+            (0.0, 1.0)
+        };
+        let uv = [[u0, v_bottom], [u1, v_bottom], [u1, v_top], [u0, v_top]];
+
+        extracted.push(ExtractedSprite {
+            z: sprite.z,
+            texture: sprite.texture,
+            corners,
+            uv,
+            color: [
+                sprite.color.r,
+                sprite.color.g,
+                sprite.color.b,
+                sprite.color.a,
+            ],
+        });
+    }
+
+    // Stable sort keeps query order for ties, so batching is deterministic frame to frame.
+    extracted.sort_by(|a, b| {
+        a.z.total_cmp(&b.z)
+            .then_with(|| a.texture.id().cmp(&b.texture.id()))
+    });
+
+    let renderer = &mut *renderer;
+    renderer.vertices.clear();
+    renderer.batches.clear();
+    for item in &extracted {
+        // Ensure a bind group exists for this texture (created once, cached).
+        if let Some(texture) = textures.get(item.texture) {
+            renderer.bind_group_for(&gpu, item.texture.id(), texture);
+        }
+
+        let start = renderer.vertices.len() as u32;
+        let quad = [0usize, 1, 2, 0, 2, 3].map(|i| SpriteVertex {
+            position: item.corners[i].into(),
+            uv: item.uv[i],
+            color: item.color,
+        });
+        renderer.vertices.extend_from_slice(&quad);
+
+        match renderer.batches.last_mut() {
+            Some(batch) if batch.texture_id == item.texture.id() => {
+                batch.vertex_range.end = start + 6;
+            }
+            _ => renderer.batches.push(Batch {
+                texture_id: item.texture.id(),
+                vertex_range: start..start + 6,
+            }),
+        }
+    }
+
+    stats.sprites = extracted.len();
+    stats.batches = renderer.batches.len();
+}
