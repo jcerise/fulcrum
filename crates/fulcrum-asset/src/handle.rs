@@ -14,6 +14,13 @@ pub struct Handle<T> {
 }
 
 impl<T> Handle<T> {
+    /// A handle that resolves to nothing. Placeholder for sprites that draw via a
+    /// `SpriteSheet` region instead of a direct texture.
+    pub const INVALID: Self = Self {
+        id: u32::MAX,
+        _marker: PhantomData,
+    };
+
     pub(crate) fn new(id: u32) -> Self {
         Self {
             id,

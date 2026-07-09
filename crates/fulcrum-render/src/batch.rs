@@ -61,6 +61,9 @@ pub struct SpriteRenderer {
     white_bind_group: wgpu::BindGroup,
     /// Tiny dedicated buffer for the letterbox background quad.
     background_buffer: wgpu::Buffer,
+    gizmo_pipeline: wgpu::RenderPipeline,
+    gizmo_buffer: wgpu::Buffer,
+    gizmo_capacity: u64,
 }
 
 const INITIAL_VERTEX_CAPACITY: u64 = 6 * 1024; // vertices, not bytes
@@ -187,6 +190,54 @@ impl SpriteRenderer {
             mapped_at_creation: false,
         });
 
+        // Gizmo line pipeline: untextured, shares the globals bind group.
+        let gizmo_shader = device.create_shader_module(wgpu::include_wgsl!("shader_gizmos.wgsl"));
+        let gizmo_layout = device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
+            label: Some("gizmo pipeline layout"),
+            bind_group_layouts: &[Some(&globals_layout)],
+            immediate_size: 0,
+        });
+        let gizmo_pipeline = device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
+            label: Some("gizmo pipeline"),
+            layout: Some(&gizmo_layout),
+            vertex: wgpu::VertexState {
+                module: &gizmo_shader,
+                entry_point: Some("vs_main"),
+                compilation_options: Default::default(),
+                buffers: &[Some(wgpu::VertexBufferLayout {
+                    array_stride: std::mem::size_of::<crate::gizmos::GizmoVertex>()
+                        as wgpu::BufferAddress,
+                    step_mode: wgpu::VertexStepMode::Vertex,
+                    attributes: &wgpu::vertex_attr_array![0 => Float32x2, 1 => Float32x4],
+                })],
+            },
+            fragment: Some(wgpu::FragmentState {
+                module: &gizmo_shader,
+                entry_point: Some("fs_main"),
+                compilation_options: Default::default(),
+                targets: &[Some(wgpu::ColorTargetState {
+                    format: surface_format,
+                    blend: Some(wgpu::BlendState::ALPHA_BLENDING),
+                    write_mask: wgpu::ColorWrites::ALL,
+                })],
+            }),
+            primitive: wgpu::PrimitiveState {
+                topology: wgpu::PrimitiveTopology::LineList,
+                ..Default::default()
+            },
+            depth_stencil: None,
+            multisample: wgpu::MultisampleState::default(),
+            multiview_mask: None,
+            cache: None,
+        });
+        let gizmo_capacity: u64 = 1024;
+        let gizmo_buffer = device.create_buffer(&wgpu::BufferDescriptor {
+            label: Some("gizmo vertices"),
+            size: gizmo_capacity * std::mem::size_of::<crate::gizmos::GizmoVertex>() as u64,
+            usage: wgpu::BufferUsages::VERTEX | wgpu::BufferUsages::COPY_DST,
+            mapped_at_creation: false,
+        });
+
         Self {
             pipeline,
             globals_buffer,
@@ -200,7 +251,40 @@ impl SpriteRenderer {
             batches: Vec::new(),
             white_bind_group,
             background_buffer,
+            gizmo_pipeline,
+            gizmo_buffer,
+            gizmo_capacity,
         }
+    }
+
+    /// Draw this frame's gizmo lines above everything. Globals were written by
+    /// [`draw`](Self::draw); call after it, inside the same pass.
+    pub(crate) fn draw_gizmos(
+        &mut self,
+        gpu: &GpuContext,
+        vertices: &[crate::gizmos::GizmoVertex],
+        pass: &mut wgpu::RenderPass<'_>,
+    ) {
+        if vertices.is_empty() {
+            return;
+        }
+        let needed = vertices.len() as u64;
+        if needed > self.gizmo_capacity {
+            self.gizmo_capacity = needed.next_power_of_two();
+            self.gizmo_buffer = gpu.device.create_buffer(&wgpu::BufferDescriptor {
+                label: Some("gizmo vertices"),
+                size: self.gizmo_capacity
+                    * std::mem::size_of::<crate::gizmos::GizmoVertex>() as u64,
+                usage: wgpu::BufferUsages::VERTEX | wgpu::BufferUsages::COPY_DST,
+                mapped_at_creation: false,
+            });
+        }
+        gpu.queue
+            .write_buffer(&self.gizmo_buffer, 0, bytemuck::cast_slice(vertices));
+        pass.set_pipeline(&self.gizmo_pipeline);
+        pass.set_bind_group(0, &self.globals_bind_group, &[]);
+        pass.set_vertex_buffer(0, self.gizmo_buffer.slice(..));
+        pass.draw(0..vertices.len() as u32, 0..1);
     }
 
     fn create_vertex_buffer(device: &wgpu::Device, capacity: u64) -> wgpu::Buffer {
@@ -247,9 +331,7 @@ impl SpriteRenderer {
         clear_color: Color,
         pass: &mut wgpu::RenderPass<'_>,
     ) {
-        if self.batches.is_empty() && !frame.letterboxed {
-            return;
-        }
+        // Globals are written unconditionally: the gizmo pass reuses them.
         let view_proj = frame.view_proj.to_cols_array();
         gpu.queue
             .write_buffer(&self.globals_buffer, 0, bytemuck::cast_slice(&view_proj));
@@ -309,6 +391,7 @@ struct ExtractedSprite {
 pub(crate) fn extract_sprites(
     sprites: Query<(&Sprite, &Transform2D, &PreviousTransform2D)>,
     textures: Res<Assets<Texture>>,
+    sheets: Res<Assets<crate::atlas::SpriteSheet>>,
     gpu: Res<GpuContext>,
     time: Res<Time>,
     mut renderer: ResMut<SpriteRenderer>,
@@ -318,13 +401,27 @@ pub(crate) fn extract_sprites(
 
     let mut extracted: Vec<ExtractedSprite> = Vec::with_capacity(sprites.iter().len());
     for (sprite, transform, previous) in &sprites {
-        let Some(texture) = textures.get(sprite.texture) else {
+        // Resolve the texture and UV sub-rect: either a sheet region or the whole texture.
+        let (texture_handle, region_rect) = match sprite.region {
+            Some(region) => {
+                let Some(sheet) = sheets.get(region.sheet) else {
+                    continue;
+                };
+                let Some(rect) = sheet.regions.get(region.index as usize) else {
+                    continue;
+                };
+                (sheet.texture, Some(*rect))
+            }
+            None => (sprite.texture, None),
+        };
+        let Some(texture) = textures.get(texture_handle) else {
             continue;
         };
         let interpolated = previous.0.lerp(transform, alpha);
-        let size = sprite
-            .custom_size
+        let natural_size = region_rect
+            .map(|r| r.size())
             .unwrap_or(Vec2::new(texture.width as f32, texture.height as f32));
+        let size = sprite.custom_size.unwrap_or(natural_size);
 
         // Local corners in +Y-up space, anchor-relative, before rotation/scale.
         let min = -sprite.anchor * size;
@@ -359,7 +456,7 @@ pub(crate) fn extract_sprites(
 
         extracted.push(ExtractedSprite {
             z: sprite.z,
-            texture: sprite.texture,
+            texture: texture_handle,
             corners,
             uv,
             color: [

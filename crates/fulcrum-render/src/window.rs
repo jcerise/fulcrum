@@ -49,9 +49,14 @@ impl Plugin for WindowPlugin {
         app.world_mut()
             .insert_resource(Assets::<crate::texture::Texture>::default());
         app.world_mut()
+            .insert_resource(Assets::<crate::atlas::SpriteSheet>::default());
+        app.world_mut()
             .insert_resource(crate::batch::RenderStats::default());
         app.world_mut()
             .insert_resource(crate::camera::Camera2D::default());
+        let gizmos_enabled = app.config().gizmos_enabled;
+        app.world_mut()
+            .insert_resource(crate::gizmos::Gizmos::new(gizmos_enabled));
         app.add_systems(fulcrum_core::PreRender, crate::batch::extract_sprites);
         app.set_runner(winit_runner);
     }

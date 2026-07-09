@@ -8,6 +8,7 @@
 
 pub mod app;
 pub mod input;
+pub mod math;
 pub mod plugin;
 pub mod rng;
 pub mod schedule;
@@ -16,6 +17,7 @@ pub mod transform;
 
 pub use app::{DEFAULT_SEED, Fulcrum, FulcrumConfig};
 pub use input::{Input, Key, MouseButton};
+pub use math::Rect;
 pub use plugin::Plugin;
 pub use rng::SimRng;
 pub use schedule::{FixedUpdate, PreRender, Startup, Update};

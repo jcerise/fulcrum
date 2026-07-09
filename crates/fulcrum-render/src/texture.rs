@@ -146,6 +146,7 @@ fn placeholder(textures: &mut Assets<Texture>, gpu: &GpuContext) -> Handle<Textu
 pub struct AssetLoader<'w> {
     server: Res<'w, AssetServer>,
     textures: ResMut<'w, Assets<Texture>>,
+    sheets: ResMut<'w, Assets<crate::atlas::SpriteSheet>>,
     gpu: Res<'w, GpuContext>,
 }
 
@@ -154,5 +155,13 @@ impl AssetLoader<'_> {
     /// yields the same handle.
     pub fn load(&mut self, path: &str) -> Handle<Texture> {
         load_texture(&self.server, &mut self.textures, &self.gpu, path)
+    }
+
+    /// Register a sprite sheet (e.g. built with `SpriteSheet::from_grid`) and get its handle.
+    pub fn add_sheet(
+        &mut self,
+        sheet: crate::atlas::SpriteSheet,
+    ) -> Handle<crate::atlas::SpriteSheet> {
+        self.sheets.insert(sheet)
     }
 }
