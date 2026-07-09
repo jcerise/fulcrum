@@ -46,7 +46,8 @@ impl Plugin for DefaultPlugins {
 pub mod prelude {
     pub use crate::DefaultPlugins;
     pub use fulcrum_anim::{
-        AnimPlugin, AnimationClip, AnimationPlayer, AsepriteImport, AsepriteLoader,
+        AnimPlugin, AnimationClip, AnimationPlayer, Animator, AnimatorLoader, AsepriteImport,
+        AsepriteLoader, StateMachineAsset,
     };
     pub use fulcrum_asset::{AssetServer, Assets, Handle};
     pub use fulcrum_audio::{Audio, AudioPlugin, PlayParams, Sound, SoundLoader};
@@ -64,8 +65,8 @@ pub mod prelude {
         WindowInfo, WindowPlugin,
     };
     pub use fulcrum_scene::{
-        AnimationPlayerDef, ComponentRegistry, PrefabAsset, PrefabLoader, RegisterComponentExt,
-        SceneAsset, SceneError, SceneLoader, SceneMember, ScenePlugin, SceneSpawner,
-        SpawnPrefabExt, SpriteDef, TextDef, TilemapDef, save_world,
+        AnimationPlayerDef, AnimatorDef, ComponentRegistry, PrefabAsset, PrefabLoader,
+        RegisterComponentExt, SceneAsset, SceneError, SceneLoader, SceneMember, ScenePlugin,
+        SceneSpawner, SpawnPrefabExt, SpriteDef, TextDef, TilemapDef, save_world,
     };
 }

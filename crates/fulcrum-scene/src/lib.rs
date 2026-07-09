@@ -10,7 +10,7 @@ use fulcrum_core::{Component, Fulcrum, IntoScheduleConfigs, Plugin, Transform2D,
 use serde::Serialize;
 use serde::de::DeserializeOwned;
 
-pub use defs::{AnimationPlayerDef, SpriteDef, TextDef, TilemapDef};
+pub use defs::{AnimationPlayerDef, AnimatorDef, SpriteDef, TextDef, TilemapDef};
 pub use prefab::{PrefabAsset, PrefabLoader, PrefabQueue, SpawnPrefabExt};
 pub use registry::{ComponentOps, ComponentRegistry, SceneError};
 pub use scene::{SceneAsset, SceneLoader, SceneMember, SceneSpawner, save_world};
@@ -98,6 +98,7 @@ impl Plugin for ScenePlugin {
             registry.register::<SpriteDef>("Sprite");
             registry.register::<TextDef>("Text");
             registry.register::<AnimationPlayerDef>("AnimationPlayer");
+            registry.register::<defs::AnimatorDef>("Animator");
             registry.register::<TilemapDef>("Tilemap");
         }
         app.world_mut()
@@ -118,6 +119,7 @@ impl Plugin for ScenePlugin {
                 defs::resolve_plain_defs,
                 defs::resolve_tilemap_defs,
                 defs::resolve_aseprite_defs,
+                defs::resolve_animator_defs,
             )
                 .chain(),
         );

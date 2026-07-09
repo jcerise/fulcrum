@@ -13,4 +13,6 @@ fulcrum-render = { workspace = true }
 bevy_ecs = { workspace = true }
 serde = { workspace = true }
 serde_json = { workspace = true }
+ron = { workspace = true }
+rustc-hash = { workspace = true }
 log = { workspace = true }

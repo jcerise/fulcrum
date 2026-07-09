@@ -1034,6 +1034,8 @@ dependencies = [
  "fulcrum-core",
  "fulcrum-render",
  "log",
+ "ron",
+ "rustc-hash 2.1.3",
  "serde",
  "serde_json",
 ]

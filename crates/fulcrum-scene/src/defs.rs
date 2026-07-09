@@ -7,7 +7,7 @@
 //! inspector) is symmetric.
 
 use bevy_ecs::prelude::{Commands, Component, Entity, Query, Without};
-use fulcrum_anim::{AnimationPlayer, AsepriteLoader};
+use fulcrum_anim::{AnimationPlayer, Animator, AnimatorLoader, AsepriteLoader};
 use fulcrum_core::{Color, Vec2};
 use fulcrum_render::{AssetLoader, HAlign, Sprite, Text, Tilemap, TilemapLoader};
 use serde::{Deserialize, Serialize};
@@ -77,6 +77,13 @@ impl Default for TextDef {
     }
 }
 
+/// Data-file form of [`Animator`]: the state machine by path.
+#[derive(Component, Serialize, Deserialize, Clone, Default)]
+pub struct AnimatorDef {
+    /// Path to a `.animsm.ron` state machine.
+    pub machine: String,
+}
+
 /// Data-file form of [`Tilemap`]: the map asset by path.
 #[derive(Component, Serialize, Deserialize, Clone, Default)]
 pub struct TilemapDef {
@@ -143,6 +150,26 @@ pub(crate) fn resolve_tilemap_defs(
                 commands.entity(entity).insert(Tilemap { asset, z: def.z });
             }
             Err(error) => log::error!("{error}; tilemap not spawned"),
+        }
+    }
+}
+
+/// Resolve animator defs (own system: `AnimatorLoader` shares asset storage with
+/// `AsepriteLoader`).
+pub(crate) fn resolve_animator_defs(
+    mut commands: Commands,
+    animators: Query<(Entity, &AnimatorDef), Without<Animator>>,
+    mut loader: AnimatorLoader,
+) {
+    for (entity, def) in &animators {
+        match loader.load(&def.machine) {
+            Ok(machine) => {
+                commands.entity(entity).insert((
+                    Animator::new(machine),
+                    AnimationPlayer::play(fulcrum_asset::Handle::INVALID),
+                ));
+            }
+            Err(error) => log::error!("{error}; animator not resolved"),
         }
     }
 }

@@ -5,14 +5,16 @@
 pub mod aseprite;
 pub mod clip;
 pub mod player;
+pub mod state_machine;
 
 use bevy_ecs::prelude::Local;
 use fulcrum_asset::{AssetEvent, Assets};
-use fulcrum_core::{EventReader, FixedUpdate, Fulcrum, Plugin, Update};
+use fulcrum_core::{EventReader, FixedUpdate, Fulcrum, IntoScheduleConfigs, Plugin, Update};
 
 pub use aseprite::{AsepriteImport, AsepriteLoader};
 pub use clip::AnimationClip;
 pub use player::AnimationPlayer;
+pub use state_machine::{Animator, AnimatorLoader, Condition, StateMachineAsset};
 
 /// Installs clip storage and the per-tick animation advance system. Part of `DefaultPlugins`.
 pub struct AnimPlugin;
@@ -21,7 +23,12 @@ impl Plugin for AnimPlugin {
     fn build(&self, app: &mut Fulcrum) {
         app.world_mut()
             .insert_resource(Assets::<AnimationClip>::default());
-        app.add_systems(FixedUpdate, player::advance_animations);
+        app.world_mut()
+            .insert_resource(Assets::<StateMachineAsset>::default());
+        app.add_systems(
+            FixedUpdate,
+            (state_machine::drive_animators, player::advance_animations).chain(),
+        );
         app.register_event::<AssetEvent>();
         app.add_systems(Update, reload_aseprite_files);
     }
