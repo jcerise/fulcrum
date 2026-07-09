@@ -1,0 +1,16 @@
+[package]
+name = "fulcrum-core"
+description = "Fulcrum engine core: app builder, plugins, schedules, time, input, deterministic RNG."
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[dependencies]
+bevy_ecs = { workspace = true }
+glam = { workspace = true }
+rand_pcg = { workspace = true }
+rand_core = { workspace = true }
+rustc-hash = { workspace = true }
+thiserror = { workspace = true }
+log = { workspace = true }
