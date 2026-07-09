@@ -21,6 +21,8 @@ pub struct RenderStats {
     pub sprites: usize,
     /// Draw calls issued for sprites last frame.
     pub batches: usize,
+    /// Tilemap chunks that passed culling last frame.
+    pub tilemap_chunks: usize,
 }
 
 #[repr(C)]

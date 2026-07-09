@@ -9,6 +9,7 @@ pub mod gpu;
 pub mod sprite;
 pub mod text;
 pub mod texture;
+pub mod tilemap;
 pub mod window;
 
 pub use atlas::SpriteSheet;
@@ -19,4 +20,5 @@ pub use gpu::GpuContext;
 pub use sprite::{Sprite, SpriteRegion};
 pub use text::{DefaultFont, Font, HAlign, Text};
 pub use texture::{AssetLoader, Texture};
+pub use tilemap::{TileLayer, Tilemap, TilemapAsset, TilemapLoader};
 pub use window::{WindowInfo, WindowPlugin};

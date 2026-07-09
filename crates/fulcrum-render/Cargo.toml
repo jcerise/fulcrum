@@ -17,6 +17,8 @@ bytemuck = { workspace = true }
 fontdue = { workspace = true }
 image = { workspace = true }
 pollster = { workspace = true }
+ron = { workspace = true }
 rustc-hash = { workspace = true }
+serde = { workspace = true }
 thiserror = { workspace = true }
 log = { workspace = true }

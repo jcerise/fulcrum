@@ -53,10 +53,12 @@ pub mod prelude {
         Added, Bundle, Changed, Color, Commands, Component, DEFAULT_SEED, Entity, Event,
         EventReader, EventWriter, FixedUpdate, Fulcrum, FulcrumConfig, FxHashMap, FxHashSet, Input,
         IntoScheduleConfigs, Key, Local, MouseButton, Or, Plugin, PreRender, Query, Rect, Res,
-        ResMut, Resource, SimRng, Startup, Time, Transform2D, Update, Vec2, With, Without, vec2,
+        ResMut, Resource, SimRng, Startup, Time, Transform2D, Update, Vec2, With, Without, World,
+        vec2,
     };
     pub use fulcrum_render::{
         AssetLoader, Camera2D, DefaultFont, Font, Gizmos, HAlign, RenderStats, ScalingMode, Sprite,
-        SpriteRegion, SpriteSheet, Text, Texture, WindowInfo, WindowPlugin,
+        SpriteRegion, SpriteSheet, Text, Texture, TileLayer, Tilemap, TilemapAsset, TilemapLoader,
+        WindowInfo, WindowPlugin,
     };
 }

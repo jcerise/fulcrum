@@ -102,6 +102,27 @@ impl Camera2D {
         }
     }
 
+    /// Conservative world-space AABB of everything visible (exact when unrotated). Useful for
+    /// culling.
+    pub fn visible_aabb(&self, window: Vec2) -> fulcrum_core::Rect {
+        let visible = self.visible_world(window);
+        let half = visible / 2.0;
+        let corners = [
+            Vec2::new(-half.x, -half.y),
+            Vec2::new(half.x, -half.y),
+            Vec2::new(half.x, half.y),
+            Vec2::new(-half.x, half.y),
+        ]
+        .map(|corner| self.center + rotate(corner, self.rotation));
+        let mut min = corners[0];
+        let mut max = corners[0];
+        for corner in corners {
+            min = min.min(corner);
+            max = max.max(corner);
+        }
+        fulcrum_core::Rect::new(min, max)
+    }
+
     /// Map a world position to physical-pixel screen coordinates (top-left origin, +Y down).
     pub fn world_to_screen(&self, world: Vec2, window: Vec2) -> Vec2 {
         let visible = self.visible_world(window);

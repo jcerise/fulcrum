@@ -53,6 +53,8 @@ impl Plugin for WindowPlugin {
         app.world_mut()
             .insert_resource(Assets::<crate::atlas::SpriteSheet>::default());
         app.world_mut()
+            .insert_resource(Assets::<crate::tilemap::TilemapAsset>::default());
+        app.world_mut()
             .insert_resource(crate::batch::RenderStats::default());
         app.world_mut()
             .insert_resource(crate::camera::Camera2D::default());
@@ -76,7 +78,12 @@ impl Plugin for WindowPlugin {
 
         app.add_systems(
             fulcrum_core::PreRender,
-            (crate::text::extract_text, crate::batch::extract_sprites).chain(),
+            (
+                crate::text::extract_text,
+                crate::tilemap::extract_tilemaps,
+                crate::batch::extract_sprites,
+            )
+                .chain(),
         );
         app.set_runner(winit_runner);
     }
