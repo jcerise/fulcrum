@@ -1,0 +1,14 @@
+{
+  "frames": [
+    { "filename": "ship 0", "frame": {"x":0,"y":0,"w":16,"h":16}, "duration": 100 },
+    { "filename": "ship 1", "frame": {"x":16,"y":0,"w":16,"h":16}, "duration": 70 },
+    { "filename": "ship 2", "frame": {"x":32,"y":0,"w":16,"h":16}, "duration": 70 }
+  ],
+  "meta": {
+    "image": "ship.png",
+    "frameTags": [
+      { "name": "idle", "from": 0, "to": 0, "direction": "forward" },
+      { "name": "thrust", "from": 1, "to": 2, "direction": "forward" }
+    ]
+  }
+}

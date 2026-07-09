@@ -1,10 +1,10 @@
 ---
 id: 2d-essentials
 title: "Phase 2: 2D essentials — camera, text, audio, animation, tilemaps (milestone: Asteroids)"
-status: in-progress
+status: complete
 priority: 2
 created: 2026-07-08
-steps_completed: 8
+steps_completed: 9
 steps_total: 9
 tags: [engine, camera, text, audio, animation, tilemap]
 ---

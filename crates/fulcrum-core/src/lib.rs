@@ -30,7 +30,7 @@ pub use transform::{PreviousTransform2D, Transform2D};
 pub use bevy_ecs::prelude::{
     Added, Bundle, Changed, Commands, Component, Entity, IntoScheduleConfigs, Local,
     Message as Event, MessageReader as EventReader, MessageWriter as EventWriter,
-    Messages as Events, Or, Query, Res, ResMut, Resource, With, Without,
+    Messages as Events, Or, ParamSet, Query, Res, ResMut, Resource, With, Without,
 };
 pub use bevy_ecs::schedule::ScheduleLabel;
 pub use bevy_ecs::system::ScheduleSystem;

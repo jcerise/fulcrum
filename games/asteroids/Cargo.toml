@@ -1,0 +1,16 @@
+[package]
+name = "asteroids"
+description = "Fulcrum milestone game 2: Asteroids."
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[dependencies]
+fulcrum = { workspace = true }
+env_logger = { workspace = true }
+# Manifest-only: lets #[derive(Component)] resolve the `bevy_ecs::` paths it generates.
+bevy_ecs = { workspace = true }
+
+[dev-dependencies]
+image = { workspace = true }

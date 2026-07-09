@@ -149,6 +149,11 @@ pub struct SoundLoader<'w> {
 }
 
 impl SoundLoader<'_> {
+    /// Read access to the sound storage (e.g. to pass to [`Audio::play`] in the same system).
+    pub fn assets(&self) -> &Assets<Sound> {
+        &self.sounds
+    }
+
     /// Load a sound by path (relative to the asset root), deduplicated by path. Failures log
     /// and return a handle that plays nothing.
     pub fn load(&mut self, path: &str) -> Handle<Sound> {
