@@ -14,12 +14,12 @@ pub mod tilemap;
 pub mod window;
 
 pub use atlas::SpriteSheet;
-pub use batch::RenderStats;
+pub use batch::{ExtractedSprite, RenderStats, UiQuads};
 pub use camera::{Camera2D, ScalingMode};
 pub use gizmos::Gizmos;
 pub use gpu::GpuContext;
 pub use sprite::{Sprite, SpriteRegion};
-pub use text::{DefaultFont, Font, HAlign, Text};
-pub use texture::{AssetLoader, Texture};
+pub use text::{DefaultFont, Font, GlyphCache, HAlign, Text, UiGlyph};
+pub use texture::{AssetLoader, Texture, WhitePixel};
 pub use tilemap::{TileLayer, Tilemap, TilemapAsset, TilemapLoader};
 pub use window::{WindowInfo, WindowPlugin};

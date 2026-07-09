@@ -66,6 +66,12 @@ pub struct SpriteRenderer {
     gizmo_pipeline: wgpu::RenderPipeline,
     gizmo_buffer: wgpu::Buffer,
     gizmo_capacity: u64,
+    ui_globals_buffer: wgpu::Buffer,
+    ui_globals_bind_group: wgpu::BindGroup,
+    ui_vertex_buffer: wgpu::Buffer,
+    ui_vertex_capacity: u64,
+    ui_vertices: Vec<SpriteVertex>,
+    ui_batches: Vec<Batch>,
 }
 
 const INITIAL_VERTEX_CAPACITY: u64 = 6 * 1024; // vertices, not bytes
@@ -232,6 +238,22 @@ impl SpriteRenderer {
             multiview_mask: None,
             cache: None,
         });
+        let ui_globals_buffer = device.create_buffer(&wgpu::BufferDescriptor {
+            label: Some("ui globals"),
+            size: std::mem::size_of::<Mat4>() as u64,
+            usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
+            mapped_at_creation: false,
+        });
+        let ui_globals_bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
+            label: Some("ui globals"),
+            layout: &globals_layout,
+            entries: &[wgpu::BindGroupEntry {
+                binding: 0,
+                resource: ui_globals_buffer.as_entire_binding(),
+            }],
+        });
+        let ui_vertex_buffer = Self::create_vertex_buffer(device, INITIAL_VERTEX_CAPACITY);
+
         let gizmo_capacity: u64 = 1024;
         let gizmo_buffer = device.create_buffer(&wgpu::BufferDescriptor {
             label: Some("gizmo vertices"),
@@ -256,6 +278,82 @@ impl SpriteRenderer {
             gizmo_pipeline,
             gizmo_buffer,
             gizmo_capacity,
+            ui_globals_buffer,
+            ui_globals_bind_group,
+            ui_vertex_buffer,
+            ui_vertex_capacity: INITIAL_VERTEX_CAPACITY,
+            ui_vertices: Vec::new(),
+            ui_batches: Vec::new(),
+        }
+    }
+
+    /// Build the UI vertex list from screen-space quads (push order preserved — later quads
+    /// draw on top). Called from the render step each frame.
+    pub(crate) fn build_ui(
+        &mut self,
+        gpu: &GpuContext,
+        textures: &Assets<Texture>,
+        quads: &mut Vec<ExtractedSprite>,
+    ) {
+        self.ui_vertices.clear();
+        self.ui_batches.clear();
+        for item in quads.iter() {
+            if let Some(texture) = textures.get(item.texture) {
+                self.bind_group_for(gpu, item.texture.id(), texture);
+            }
+            let start = self.ui_vertices.len() as u32;
+            let quad = [0usize, 1, 2, 0, 2, 3].map(|i| SpriteVertex {
+                position: item.corners[i].into(),
+                uv: item.uv[i],
+                color: item.color,
+            });
+            self.ui_vertices.extend_from_slice(&quad);
+            match self.ui_batches.last_mut() {
+                Some(batch) if batch.texture_id == item.texture.id() => {
+                    batch.vertex_range.end = start + 6;
+                }
+                _ => self.ui_batches.push(Batch {
+                    texture_id: item.texture.id(),
+                    vertex_range: start..start + 6,
+                }),
+            }
+        }
+        quads.clear();
+    }
+
+    /// Draw the UI stage (after world sprites, before gizmos).
+    pub(crate) fn draw_ui(
+        &mut self,
+        gpu: &GpuContext,
+        frame: &CameraFrame,
+        pass: &mut wgpu::RenderPass<'_>,
+    ) {
+        if self.ui_batches.is_empty() {
+            return;
+        }
+        let ui_proj = frame.ui_proj.to_cols_array();
+        gpu.queue
+            .write_buffer(&self.ui_globals_buffer, 0, bytemuck::cast_slice(&ui_proj));
+        let needed = self.ui_vertices.len() as u64;
+        if needed > self.ui_vertex_capacity {
+            self.ui_vertex_capacity = needed.next_power_of_two();
+            self.ui_vertex_buffer =
+                Self::create_vertex_buffer(&gpu.device, self.ui_vertex_capacity);
+        }
+        gpu.queue.write_buffer(
+            &self.ui_vertex_buffer,
+            0,
+            bytemuck::cast_slice(&self.ui_vertices),
+        );
+        pass.set_pipeline(&self.pipeline);
+        pass.set_bind_group(0, &self.ui_globals_bind_group, &[]);
+        pass.set_vertex_buffer(0, self.ui_vertex_buffer.slice(..));
+        for batch in &self.ui_batches {
+            let Some(bind_group) = self.texture_bind_groups.get(&batch.texture_id) else {
+                continue;
+            };
+            pass.set_bind_group(1, bind_group, &[]);
+            pass.draw(batch.vertex_range.clone(), 0..1);
         }
     }
 
@@ -385,14 +483,24 @@ impl SpriteRenderer {
     }
 }
 
-/// Collected per sprite before sorting. Also produced by the text extractor (glyph quads).
-pub(crate) struct ExtractedSprite {
-    pub(crate) z: f32,
-    pub(crate) texture: Handle<Texture>,
-    pub(crate) corners: [Vec2; 4],
-    pub(crate) uv: [[f32; 2]; 4],
-    pub(crate) color: [f32; 4],
+/// A raw textured quad, ready for batching. Produced by sprite/text/tilemap extraction and by
+/// the UI crate (advanced API).
+pub struct ExtractedSprite {
+    /// Draw order (higher in front).
+    pub z: f32,
+    /// Texture to sample.
+    pub texture: Handle<Texture>,
+    /// Quad corners; index 2 pairs with the top of the texture (see `uv`).
+    pub corners: [Vec2; 4],
+    /// Per-corner UVs.
+    pub uv: [[f32; 2]; 4],
+    /// Per-vertex tint.
+    pub color: [f32; 4],
 }
+
+/// Screen-space quads (UI): drawn after world sprites with the UI projection, in push order.
+#[derive(Resource, Default)]
+pub struct UiQuads(pub Vec<ExtractedSprite>);
 
 /// Extra quads contributed by other extractors (text glyphs) this frame; merged into the sprite
 /// batch before sorting, then cleared.

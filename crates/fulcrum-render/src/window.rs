@@ -57,6 +57,8 @@ impl Plugin for WindowPlugin {
         app.world_mut()
             .insert_resource(crate::batch::RenderStats::default());
         app.world_mut()
+            .insert_resource(crate::batch::UiQuads::default());
+        app.world_mut()
             .insert_resource(crate::camera::Camera2D::default());
         let gizmos_enabled = app.config().gizmos_enabled;
         app.world_mut()
@@ -200,8 +202,24 @@ impl ApplicationHandler for WinitApp {
             &context.queue,
             context.surface_config.format,
         );
+        let white = crate::texture::upload_raw(
+            &context.device,
+            &context.queue,
+            "<white>",
+            &[255u8; 4],
+            1,
+            1,
+        );
         self.app.world_mut().insert_resource(context);
         self.app.world_mut().insert_resource(renderer);
+        let white = self
+            .app
+            .world_mut()
+            .resource_mut::<Assets<crate::texture::Texture>>()
+            .insert_with_path("<white>", white);
+        self.app
+            .world_mut()
+            .insert_resource(crate::texture::WhitePixel(white));
         self.window = Some(window);
 
         self.app.run_startup();

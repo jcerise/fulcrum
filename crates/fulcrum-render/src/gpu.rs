@@ -98,6 +98,16 @@ fn render_with(world: &mut World, renderer: &mut crate::batch::SpriteRenderer) {
     } else {
         configured_clear
     };
+    // Build the UI stage from this frame's screen-space quads.
+    let mut ui_quads = std::mem::take(&mut world.resource_mut::<crate::batch::UiQuads>().0);
+    world.resource_scope(
+        |world, textures: bevy_ecs::world::Mut<fulcrum_asset::Assets<crate::texture::Texture>>| {
+            let gpu = world.resource::<GpuContext>();
+            renderer.build_ui(gpu, &textures, &mut ui_quads);
+        },
+    );
+    world.resource_mut::<crate::batch::UiQuads>().0 = ui_quads;
+
     // Take this frame's gizmo lines (hand the allocation back, cleared, afterwards).
     let mut gizmo_vertices =
         std::mem::take(&mut world.resource_mut::<crate::gizmos::Gizmos>().vertices);
@@ -165,6 +175,7 @@ fn render_with(world: &mut World, renderer: &mut crate::batch::SpriteRenderer) {
             );
         }
         renderer.draw(gpu, &camera_frame, configured_clear, &mut pass);
+        renderer.draw_ui(gpu, &camera_frame, &mut pass);
         renderer.draw_gizmos(gpu, &gizmo_vertices, &mut pass);
     }
     gpu.queue.submit(Some(encoder.finish()));

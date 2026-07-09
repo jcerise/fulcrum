@@ -57,6 +57,8 @@ impl Default for Camera2D {
 
 /// Per-frame camera math handed to the renderer.
 pub(crate) struct CameraFrame {
+    /// UI-space -> clip transform (top-left origin, +Y down, virtual pixels; zoom-independent).
+    pub ui_proj: Mat4,
     /// World -> clip transform for the sprite/gizmo shaders.
     pub view_proj: Mat4,
     /// Viewport origin in physical pixels (top-left).
@@ -100,6 +102,24 @@ impl Camera2D {
                 ((window - size) / 2.0, size)
             }
         }
+    }
+
+    /// The UI coordinate space size in virtual pixels: the letterbox virtual resolution, or the
+    /// window size for `Stretch`. Zoom-independent — UI doesn't scale with the camera.
+    pub fn ui_size(&self, window: Vec2) -> Vec2 {
+        match self.scaling {
+            ScalingMode::Stretch => window,
+            ScalingMode::FixedHeight(height) => Vec2::new(height * window.x / window.y, height),
+            ScalingMode::Letterbox { width, height }
+            | ScalingMode::IntegerScale { width, height } => Vec2::new(width, height),
+        }
+    }
+
+    /// Map physical-pixel screen coordinates to UI space (top-left origin, +Y down, virtual
+    /// pixels).
+    pub fn screen_to_ui(&self, screen: Vec2, window: Vec2) -> Vec2 {
+        let (origin, size) = self.viewport(window);
+        (screen - origin) / size * self.ui_size(window)
     }
 
     /// Conservative world-space AABB of everything visible (exact when unrotated). Useful for
@@ -174,7 +194,12 @@ impl Camera2D {
         ]
         .map(|corner| self.center + rotate(corner, self.rotation));
 
+        let ui = self.ui_size(window);
+        let ui_proj =
+            glam::camera::rh::proj::directx::orthographic(0.0, ui.x, ui.y, 0.0, -1.0, 1.0);
+
         CameraFrame {
+            ui_proj,
             view_proj: projection * view,
             viewport_origin,
             viewport_size,

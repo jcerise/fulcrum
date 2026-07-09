@@ -6,6 +6,11 @@ use fulcrum_asset::{AssetError, AssetServer, Assets, Handle};
 
 use crate::gpu::GpuContext;
 
+/// Handle to a built-in 1x1 white texture (solid color quads: UI panels, flashes, bars).
+/// Inserted by the window plugin once the GPU exists.
+#[derive(bevy_ecs::prelude::Resource, Clone, Copy)]
+pub struct WhitePixel(pub Handle<Texture>);
+
 /// Path key under which the shared error-placeholder texture is stored.
 const PLACEHOLDER_PATH: &str = "<placeholder>";
 

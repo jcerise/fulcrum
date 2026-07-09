@@ -1,0 +1,17 @@
+[package]
+name = "fulcrum-ui"
+description = "Fulcrum retained-mode game UI: anchored/stacked nodes, RON layouts, widgets."
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[dependencies]
+fulcrum-core = { workspace = true }
+fulcrum-asset = { workspace = true }
+fulcrum-render = { workspace = true }
+bevy_ecs = { workspace = true }
+serde = { workspace = true }
+ron = { workspace = true }
+rustc-hash = { workspace = true }
+log = { workspace = true }

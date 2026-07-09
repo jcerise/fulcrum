@@ -39,6 +39,7 @@ impl Plugin for DefaultPlugins {
         fulcrum_audio::AudioPlugin.build(app);
         fulcrum_anim::AnimPlugin.build(app);
         fulcrum_scene::ScenePlugin.build(app);
+        fulcrum_ui::UiPlugin.build(app);
     }
 }
 
@@ -68,5 +69,9 @@ pub mod prelude {
         AnimationPlayerDef, AnimatorDef, ComponentRegistry, PrefabAsset, PrefabLoader,
         RegisterComponentExt, SceneAsset, SceneError, SceneLoader, SceneMember, ScenePlugin,
         SceneSpawner, SpawnPrefabExt, SpriteDef, TextDef, TilemapDef, save_world,
+    };
+    pub use fulcrum_ui::{
+        Anchor, ButtonStyle, StackDir, UiButton, UiEvent, UiFocus, UiId, UiImage, UiLabel,
+        UiLoader, UiNode, UiPanel, UiPlugin, UiQuery, UiRect, UiSize,
     };
 }

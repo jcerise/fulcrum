@@ -133,12 +133,13 @@ struct Shelf {
 /// The glyph atlas: rasterizes `(font, size, char)` on demand into shelf-packed pages.
 /// Packing and caching are CPU-only (unit-testable); [`flush`](Self::flush) does the GPU work.
 #[derive(Resource)]
-pub(crate) struct GlyphCache {
+pub struct GlyphCache {
     page_size: u32,
     shelves: Vec<Shelf>,
     entries: FxHashMap<(u32, u32, char), Option<CachedGlyph>>,
     pending: Vec<PendingUpload>,
     page_textures: Vec<Handle<Texture>>,
+    pending_page_indices: Vec<u32>,
     hits: u64,
     misses: u64,
 }
@@ -151,6 +152,7 @@ impl GlyphCache {
             entries: FxHashMap::default(),
             pending: Vec::new(),
             page_textures: Vec::new(),
+            pending_page_indices: Vec::new(),
             hits: 0,
             misses: 0,
         }
@@ -306,6 +308,127 @@ struct GlyphQuad {
     page: u32,
     uv_px: Rect,
     local: Rect,
+}
+
+/// A glyph quad in top-left-origin, +Y-down coordinates — for screen-space (UI) text.
+pub struct UiGlyph {
+    /// Atlas page texture (valid after [`GlyphCache::flush`]).
+    pub page: Handle<Texture>,
+    /// Pixel rect within the page.
+    pub uv_px: Rect,
+    /// Quad rect relative to the text block's top-left, +Y down.
+    pub rect: Rect,
+}
+
+impl GlyphCache {
+    /// The atlas page size in pixels (UV normalization).
+    pub fn page_px(&self) -> f32 {
+        self.page_size as f32
+    }
+
+    /// Measure a text block (multi-line via newlines) at `px`: (max line width, total height).
+    pub fn measure(font: &Font, text: &str, px: f32) -> fulcrum_core::Vec2 {
+        let px = px.round().max(1.0);
+        let line_height = font
+            .0
+            .horizontal_line_metrics(px)
+            .map(|m| m.new_line_size)
+            .unwrap_or(px);
+        let mut max_width = 0.0f32;
+        let mut lines = 0u32;
+        for line in text.split('\n') {
+            lines += 1;
+            let mut width = 0.0;
+            let mut prev = None;
+            for ch in line.chars() {
+                if let Some(previous) = prev {
+                    width += font.0.horizontal_kern(previous, ch, px).unwrap_or(0.0);
+                }
+                width += font.0.metrics(ch, px).advance_width;
+                prev = Some(ch);
+            }
+            max_width = max_width.max(width);
+        }
+        fulcrum_core::Vec2::new(max_width, lines as f32 * line_height)
+    }
+
+    /// Lay out UI text (top-left origin, +Y down). Call [`flush`](Self::flush) afterwards (with
+    /// GPU access) before the returned pages are drawn.
+    pub fn layout_ui(
+        &mut self,
+        font: &Font,
+        font_id: u32,
+        text: &str,
+        px: f32,
+        h_align: HAlign,
+        block_width: f32,
+    ) -> Vec<UiGlyph> {
+        let px_rounded = px.round().max(1.0) as u32;
+        let metrics = font.0.horizontal_line_metrics(px_rounded as f32);
+        // Some fonts (the built-in pixel font included) draw caps taller than the reported
+        // ascent; use at least the font size so the first line stays inside the block.
+        let ascent = metrics.map(|m| m.ascent).unwrap_or(px).max(px);
+        let line_height = metrics.map(|m| m.new_line_size).unwrap_or(px);
+        let mut out = Vec::new();
+        for (line_index, line) in text.split('\n').enumerate() {
+            let width = Self::measure(font, line, px).x;
+            let mut pen_x = match h_align {
+                HAlign::Left => 0.0,
+                HAlign::Center => (block_width - width) / 2.0,
+                HAlign::Right => block_width - width,
+            };
+            let baseline = ascent + line_index as f32 * line_height;
+            let mut prev = None;
+            for ch in line.chars() {
+                if let Some(previous) = prev {
+                    pen_x += font
+                        .0
+                        .horizontal_kern(previous, ch, px_rounded as f32)
+                        .unwrap_or(0.0);
+                }
+                if let Some(glyph) = self.glyph(&font.0, font_id, ch, px_rounded) {
+                    let top = baseline - glyph.metrics.ymin as f32 - glyph.metrics.height as f32;
+                    // Defer handle resolution: pages may not exist until flush. Record the page
+                    // index in a placeholder handle-free form via uv rect + rect; the caller
+                    // resolves pages after flush via `page_texture`.
+                    out.push(UiGlyph {
+                        page: Handle::INVALID, // patched by resolve_pages below
+                        uv_px: glyph.rect,
+                        rect: Rect::from_min_size(
+                            fulcrum_core::Vec2::new(pen_x + glyph.metrics.xmin as f32, top),
+                            fulcrum_core::Vec2::new(
+                                glyph.metrics.width as f32,
+                                glyph.metrics.height as f32,
+                            ),
+                        ),
+                    });
+                    // Stash the page index in the alpha-free slot: track separately.
+                    self.pending_page_indices.push(glyph.page);
+                }
+                pen_x += font.0.metrics(ch, px_rounded as f32).advance_width;
+                prev = Some(ch);
+            }
+        }
+        out
+    }
+
+    /// Resolve page handles for glyphs from the most recent [`layout_ui`] calls. Calls must
+    /// pair with `layout_ui` in order; each resolves exactly its own glyphs.
+    pub fn resolve_pages(&mut self, glyphs: &mut [UiGlyph]) {
+        let count = glyphs.len().min(self.pending_page_indices.len());
+        for (glyph, page) in glyphs
+            .iter_mut()
+            .zip(self.pending_page_indices.drain(..count))
+        {
+            glyph.page = self.page_textures[page as usize];
+        }
+    }
+
+    /// GPU side of the cache: create missing pages, upload pending pixels. Public for the UI
+    /// crate's extraction (idempotent; also called by world-text extraction).
+    pub fn flush_now(&mut self, gpu: &GpuContext, textures: &mut Assets<Texture>) {
+        self.flush(gpu, textures);
+    }
 }
 
 /// Lay out `text`, rasterizing glyphs into the cache as needed. Pure CPU; unit-testable.
