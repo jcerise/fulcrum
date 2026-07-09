@@ -1,17 +1,19 @@
 [package]
-name = "fulcrum-core"
-description = "Fulcrum engine core: app builder, plugins, schedules, time, input, deterministic RNG."
+name = "fulcrum-scene"
+description = "Fulcrum data-driven layer: component registry, prefabs, and scenes."
 version.workspace = true
 edition.workspace = true
 license.workspace = true
 repository.workspace = true
 
 [dependencies]
+fulcrum-core = { workspace = true }
+fulcrum-asset = { workspace = true }
+fulcrum-render = { workspace = true }
+fulcrum-anim = { workspace = true }
 bevy_ecs = { workspace = true }
-glam = { workspace = true }
-rand_pcg = { workspace = true }
 serde = { workspace = true }
-rand_core = { workspace = true }
+ron = { workspace = true }
 rustc-hash = { workspace = true }
 thiserror = { workspace = true }
 log = { workspace = true }

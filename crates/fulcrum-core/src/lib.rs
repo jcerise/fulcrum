@@ -44,7 +44,7 @@ pub use glam::{Vec2, vec2};
 pub use rustc_hash::{FxHashMap, FxHashSet};
 
 /// An RGBA color with `f32` components in `0.0..=1.0`.
-#[derive(Debug, Clone, Copy, PartialEq)]
+#[derive(Debug, Clone, Copy, PartialEq, serde::Serialize, serde::Deserialize)]
 pub struct Color {
     /// Red component.
     pub r: f32,
@@ -54,6 +54,13 @@ pub struct Color {
     pub b: f32,
     /// Alpha component (0.0 = fully transparent).
     pub a: f32,
+}
+
+impl Default for Color {
+    /// White — the identity tint.
+    fn default() -> Self {
+        Self::WHITE
+    }
 }
 
 impl Color {

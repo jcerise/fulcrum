@@ -103,6 +103,11 @@ pub struct AsepriteLoader<'w> {
 }
 
 impl AsepriteLoader<'_> {
+    /// Read access to the sheet storage (e.g. to look up named regions after loading).
+    pub fn sheets(&self) -> &Assets<SpriteSheet> {
+        &self.sheets
+    }
+
     /// Load an Aseprite JSON export (and its packed PNG, resolved relative to the JSON's
     /// directory). Frame durations convert from milliseconds to simulation ticks.
     pub fn load(&mut self, json_path: &str) -> Result<AsepriteImport, AssetError> {

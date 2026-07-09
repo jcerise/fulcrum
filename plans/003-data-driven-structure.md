@@ -1,10 +1,10 @@
 ---
 id: data-driven-structure
 title: "Phase 3: Structure — prefabs, scenes, hot reload, animation state machines, UI (milestone: dungeon demo)"
-status: pending
+status: in-progress
 priority: 3
 created: 2026-07-08
-steps_completed: 0
+steps_completed: 1
 steps_total: 9
 tags: [engine, prefabs, scenes, hot-reload, ui, animation, egui]
 ---

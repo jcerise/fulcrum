@@ -16,12 +16,13 @@ fulcrum-render = { path = "crates/fulcrum-render" }
 fulcrum-asset = { path = "crates/fulcrum-asset" }
 fulcrum-audio = { path = "crates/fulcrum-audio" }
 fulcrum-anim = { path = "crates/fulcrum-anim" }
+fulcrum-scene = { path = "crates/fulcrum-scene" }
 
 # external, pinned 2026-07-08
 bevy_ecs = "0.19"
 wgpu = "30.0"
 winit = "0.30"
-glam = "0.33"
+glam = { version = "0.33", features = ["serde"] }
 image = { version = "0.25", default-features = false, features = ["png"] }
 bytemuck = { version = "1.25", features = ["derive"] }
 pollster = "0.4"

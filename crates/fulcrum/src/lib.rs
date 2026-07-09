@@ -38,6 +38,7 @@ impl Plugin for DefaultPlugins {
         fulcrum_render::WindowPlugin.build(app);
         fulcrum_audio::AudioPlugin.build(app);
         fulcrum_anim::AnimPlugin.build(app);
+        fulcrum_scene::ScenePlugin.build(app);
     }
 }
 
@@ -60,5 +61,9 @@ pub mod prelude {
         AssetLoader, Camera2D, DefaultFont, Font, Gizmos, HAlign, RenderStats, ScalingMode, Sprite,
         SpriteRegion, SpriteSheet, Text, Texture, TileLayer, Tilemap, TilemapAsset, TilemapLoader,
         WindowInfo, WindowPlugin,
+    };
+    pub use fulcrum_scene::{
+        AnimationPlayerDef, ComponentRegistry, RegisterComponentExt, SceneError, ScenePlugin,
+        SpriteDef, TextDef, TilemapDef,
     };
 }

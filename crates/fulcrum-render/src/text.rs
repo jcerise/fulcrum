@@ -38,7 +38,7 @@ impl Font {
 pub struct DefaultFont(pub Handle<Font>);
 
 /// Horizontal alignment of each line relative to the entity's translation.
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Default)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Default, serde::Serialize, serde::Deserialize)]
 pub enum HAlign {
     /// Lines start at the translation (default).
     #[default]

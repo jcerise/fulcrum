@@ -1011,6 +1011,7 @@ dependencies = [
  "fulcrum-audio",
  "fulcrum-core",
  "fulcrum-render",
+ "fulcrum-scene",
 ]
 
 [[package]]
@@ -1058,6 +1059,7 @@ dependencies = [
  "rand_core",
  "rand_pcg",
  "rustc-hash 2.1.3",
+ "serde",
  "thiserror 2.0.18",
 ]
 
@@ -1080,6 +1082,22 @@ dependencies = [
  "thiserror 2.0.18",
  "wgpu",
  "winit",
+]
+
+[[package]]
+name = "fulcrum-scene"
+version = "0.1.0"
+dependencies = [
+ "bevy_ecs",
+ "fulcrum-anim",
+ "fulcrum-asset",
+ "fulcrum-core",
+ "fulcrum-render",
+ "log",
+ "ron",
+ "rustc-hash 2.1.3",
+ "serde",
+ "thiserror 2.0.18",
 ]
 
 [[package]]
@@ -1194,6 +1212,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "7f22fb22f065b308be0d8724e3706c7fa3fc2a6c7d6899df4cad7860e7a75436"
 dependencies = [
  "mint",
+ "serde_core",
 ]
 
 [[package]]

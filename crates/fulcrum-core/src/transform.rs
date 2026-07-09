@@ -8,7 +8,8 @@ use bevy_ecs::world::World;
 use glam::Vec2;
 
 /// Where an entity is, how it's rotated, and how it's scaled.
-#[derive(Component, Clone, Copy, Debug, PartialEq)]
+#[derive(Component, Clone, Copy, Debug, PartialEq, serde::Serialize, serde::Deserialize)]
+#[serde(default)]
 pub struct Transform2D {
     /// World position in pixels.
     pub translation: Vec2,
