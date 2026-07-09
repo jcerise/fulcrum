@@ -1,0 +1,14 @@
+[package]
+name = "fulcrum-asset"
+description = "Fulcrum asset system: typed handles, asset storage, and file loaders."
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[dependencies]
+bevy_ecs = { workspace = true }
+image = { workspace = true }
+rustc-hash = { workspace = true }
+thiserror = { workspace = true }
+log = { workspace = true }
