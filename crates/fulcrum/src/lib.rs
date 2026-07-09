@@ -1,0 +1,53 @@
+//! Fulcrum — an opinionated, deterministic 2D game engine.
+//!
+//! This is the facade crate: games depend on `fulcrum` alone and import everything through
+//! [`prelude`]. A complete window-on-screen program:
+//!
+//! ```no_run
+//! use fulcrum::prelude::*;
+//!
+//! fn setup(mut commands: Commands, mut assets: AssetLoader) {
+//!     commands.spawn((
+//!         Sprite::new(assets.load("ship.png")),
+//!         Transform2D::from_xy(0.0, 0.0),
+//!     ));
+//! }
+//!
+//! fn main() {
+//!     Fulcrum::new("my game")
+//!         .with_plugin(DefaultPlugins)
+//!         .add_startup(setup)
+//!         .run();
+//! }
+//! ```
+//!
+//! Game logic goes in `FixedUpdate` systems (added with
+//! [`add_system`](prelude::Fulcrum::add_system)) — a deterministic, fixed-rate simulation the
+//! renderer interpolates. See `docs/determinism.md` for the rules that keep games replayable.
+
+use fulcrum_core::{Fulcrum, Plugin};
+
+/// Everything needed to put a game on screen: window + wgpu renderer, sprite batching, assets,
+/// and input. Add once, right after [`Fulcrum::new`](prelude::Fulcrum::new).
+///
+/// Grows in later phases (audio, animation, UI); adding it today keeps games source-stable.
+pub struct DefaultPlugins;
+
+impl Plugin for DefaultPlugins {
+    fn build(&self, app: &mut Fulcrum) {
+        fulcrum_render::WindowPlugin.build(app);
+    }
+}
+
+/// The single import surface for games: `use fulcrum::prelude::*;`.
+pub mod prelude {
+    pub use crate::DefaultPlugins;
+    pub use fulcrum_asset::{AssetServer, Assets, Handle};
+    pub use fulcrum_core::{
+        Added, Bundle, Changed, Color, Commands, Component, DEFAULT_SEED, Entity, Event,
+        EventReader, EventWriter, FixedUpdate, Fulcrum, FulcrumConfig, FxHashMap, FxHashSet, Input,
+        IntoScheduleConfigs, Key, Local, MouseButton, Or, Plugin, PreRender, Query, Res, ResMut,
+        Resource, SimRng, Startup, Time, Transform2D, Update, Vec2, With, Without, vec2,
+    };
+    pub use fulcrum_render::{AssetLoader, RenderStats, Sprite, Texture, WindowInfo, WindowPlugin};
+}
