@@ -17,3 +17,4 @@ ron = { workspace = true }
 rustc-hash = { workspace = true }
 thiserror = { workspace = true }
 log = { workspace = true }
+xxhash-rust = { workspace = true }

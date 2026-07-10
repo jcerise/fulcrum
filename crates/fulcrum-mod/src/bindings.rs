@@ -309,6 +309,24 @@ pub fn install(runtime: &LuaRuntime) -> mlua::Result<()> {
         )?;
 
         fulcrum.set(
+            "emit_command",
+            lua.create_function(|lua, (name, payload): (String, Option<LuaValue>)| {
+                let payload = match payload {
+                    Some(LuaValue::String(text)) => text.to_str()?.to_owned(),
+                    Some(value) => ron::ser::to_string(&lua_to_ron(&value)?)
+                        .map_err(|e| mlua::Error::runtime(e.to_string()))?,
+                    None => String::new(),
+                };
+                with_world(lua, |world| {
+                    world
+                        .resource_mut::<fulcrum_core::CommandOutbox>()
+                        .send(name.clone(), payload.clone());
+                    Ok(())
+                })
+            })?,
+        )?;
+
+        fulcrum.set(
             "emit",
             lua.create_function(|lua, (name, payload): (String, Option<LuaValue>)| {
                 let payload = match payload {

@@ -57,6 +57,12 @@ impl SimRng {
         self.unit_f32() < p
     }
 
+    /// A fingerprint of the current stream position, drawn from a clone (does **not** advance
+    /// this RNG). Used by replay state hashing.
+    pub fn state_probe(&self) -> u64 {
+        self.0.clone().next_u64()
+    }
+
     /// Split off an independent child RNG (for a subsystem or mod), advancing this one once.
     /// Forked streams stay deterministic and don't interleave with the parent's rolls.
     pub fn fork(&mut self) -> SimRng {

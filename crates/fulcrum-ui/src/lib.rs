@@ -27,6 +27,9 @@ impl Plugin for UiPlugin {
         app.world_mut().insert_resource(UiFocus::default());
         app.register_event::<UiEvent>();
         app.register_event::<fulcrum_asset::AssetEvent>();
+        // Clicks arrive as replayable `ui:click` commands; this rehydrates them into UiEvents.
+        // Registered here — before any game system — so games read clicks the same tick.
+        app.add_systems(fulcrum_core::FixedUpdate, interact::dispatch_ui_commands);
         // Reload first (despawn/respawn applies before layout queues per-entity work).
         app.add_systems(
             Update,

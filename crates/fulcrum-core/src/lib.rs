@@ -11,6 +11,7 @@ pub mod hierarchy;
 pub mod input;
 pub mod math;
 pub mod plugin;
+pub mod replay;
 pub mod rng;
 pub mod schedule;
 pub mod time;
@@ -18,9 +19,13 @@ pub mod transform;
 
 pub use app::{DEFAULT_SEED, Fulcrum, FulcrumConfig};
 pub use hierarchy::{Children, Parent};
-pub use input::{Input, Key, MouseButton};
+pub use input::{Input, InputDelta, Key, MouseButton};
 pub use math::Rect;
 pub use plugin::Plugin;
+pub use replay::{
+    CommandEvent, CommandOutbox, Replay, ReplayError, ReplayModSet, ReplayPlayback, ReplayRecorder,
+    StateHasher, save_replay,
+};
 pub use rng::SimRng;
 pub use schedule::{FixedUpdate, PreRender, Startup, Update};
 pub use time::Time;

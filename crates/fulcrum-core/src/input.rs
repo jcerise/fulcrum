@@ -11,10 +11,11 @@
 use bevy_ecs::prelude::Resource;
 use glam::Vec2;
 use rustc_hash::FxHashSet;
+use serde::{Deserialize, Serialize};
 
 /// Keyboard keys, identified by **physical position** (scancode-based), so WASD works the same
 /// on any keyboard layout.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
 #[expect(missing_docs, reason = "key names are self-describing")]
 pub enum Key {
     A,
@@ -80,7 +81,7 @@ pub enum Key {
 }
 
 /// Mouse buttons.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
 #[expect(missing_docs, reason = "button names are self-describing")]
 pub enum MouseButton {
     Left,
@@ -110,6 +111,24 @@ pub struct Input {
     mouse_world: Vec2,
     scroll_delta: f32,
     pending: Pending,
+    last_delta: InputDelta,
+}
+
+/// Everything one [`sample`](Input::sample) drained, plus the resulting mouse state — the unit
+/// of input a replay records per tick. `mouse_world` is recorded rather than recomputed on
+/// playback: the camera mapping is cosmetic state a replay can't reconstruct.
+#[derive(Clone, Debug, Default, PartialEq, Serialize, Deserialize)]
+pub struct InputDelta {
+    /// Key transitions this tick, in arrival order (`true` = pressed).
+    pub keys: Vec<(Key, bool)>,
+    /// Mouse button transitions this tick, in arrival order (`true` = pressed).
+    pub buttons: Vec<(MouseButton, bool)>,
+    /// Cursor position after this tick's sample, physical pixels.
+    pub mouse_screen: Vec2,
+    /// Cursor position after this tick's sample, world units.
+    pub mouse_world: Vec2,
+    /// Scroll wheel movement this tick, in lines.
+    pub scroll: f32,
 }
 
 impl Input {
@@ -184,28 +203,14 @@ impl Input {
     /// per fixed tick; `screen_to_world` maps the cursor through the active camera (headless
     /// harnesses pass whatever mapping — or `|s| s` — they need).
     pub fn sample(&mut self, screen_to_world: impl Fn(Vec2) -> Vec2) {
-        self.just_pressed.clear();
-        self.just_released.clear();
-        self.mouse_just_pressed.clear();
-        self.mouse_just_released.clear();
-
-        for (key, down) in self.pending.keys.drain(..) {
-            if down {
-                if self.pressed.insert(key) {
-                    self.just_pressed.insert(key);
-                }
-            } else if self.pressed.remove(&key) {
-                self.just_released.insert(key);
-            }
+        self.clear_edges();
+        let keys = std::mem::take(&mut self.pending.keys);
+        let buttons = std::mem::take(&mut self.pending.buttons);
+        for &(key, down) in &keys {
+            self.apply_key(key, down);
         }
-        for (button, down) in self.pending.buttons.drain(..) {
-            if down {
-                if self.mouse_pressed.insert(button) {
-                    self.mouse_just_pressed.insert(button);
-                }
-            } else if self.mouse_pressed.remove(&button) {
-                self.mouse_just_released.insert(button);
-            }
+        for &(button, down) in &buttons {
+            self.apply_button(button, down);
         }
         if let Some(screen) = self.pending.cursor.take() {
             self.mouse_screen = screen;
@@ -213,5 +218,62 @@ impl Input {
         self.mouse_world = screen_to_world(self.mouse_screen);
         self.scroll_delta = self.pending.scroll;
         self.pending.scroll = 0.0;
+        self.last_delta = InputDelta {
+            keys,
+            buttons,
+            mouse_screen: self.mouse_screen,
+            mouse_world: self.mouse_world,
+            scroll: self.scroll_delta,
+        };
+    }
+
+    /// Take the delta captured by the last [`sample`](Input::sample) (leaving an empty one).
+    /// Called by the tick loop when recording.
+    pub fn take_delta(&mut self) -> InputDelta {
+        std::mem::take(&mut self.last_delta)
+    }
+
+    /// Replace this tick's input with a recorded delta: pending OS events are discarded and the
+    /// readable state becomes exactly what the recording run saw. Called during replay playback.
+    pub fn apply_recorded(&mut self, delta: &InputDelta) {
+        self.pending = Pending::default();
+        self.clear_edges();
+        for &(key, down) in &delta.keys {
+            self.apply_key(key, down);
+        }
+        for &(button, down) in &delta.buttons {
+            self.apply_button(button, down);
+        }
+        self.mouse_screen = delta.mouse_screen;
+        self.mouse_world = delta.mouse_world;
+        self.scroll_delta = delta.scroll;
+        self.last_delta = InputDelta::default();
+    }
+
+    fn clear_edges(&mut self) {
+        self.just_pressed.clear();
+        self.just_released.clear();
+        self.mouse_just_pressed.clear();
+        self.mouse_just_released.clear();
+    }
+
+    fn apply_key(&mut self, key: Key, down: bool) {
+        if down {
+            if self.pressed.insert(key) {
+                self.just_pressed.insert(key);
+            }
+        } else if self.pressed.remove(&key) {
+            self.just_released.insert(key);
+        }
+    }
+
+    fn apply_button(&mut self, button: MouseButton, down: bool) {
+        if down {
+            if self.mouse_pressed.insert(button) {
+                self.mouse_just_pressed.insert(button);
+            }
+        } else if self.mouse_pressed.remove(&button) {
+            self.mouse_just_released.insert(button);
+        }
     }
 }

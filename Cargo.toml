@@ -29,6 +29,8 @@ glam = { version = "0.33", features = ["serde"] }
 image = { version = "0.25", default-features = false, features = ["png"] }
 bytemuck = { version = "1.25", features = ["derive"] }
 pollster = "0.4"
+postcard = { version = "1", features = ["use-std"] }
+xxhash-rust = { version = "0.8", features = ["xxh3"] }
 rand_pcg = "0.10"
 rand_core = "0.10"
 rustc-hash = "2.1"

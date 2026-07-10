@@ -10,6 +10,7 @@ repository.workspace = true
 bevy_ecs = { workspace = true }
 glam = { workspace = true }
 rand_pcg = { workspace = true }
+postcard = { workspace = true }
 serde = { workspace = true }
 rand_core = { workspace = true }
 rustc-hash = { workspace = true }

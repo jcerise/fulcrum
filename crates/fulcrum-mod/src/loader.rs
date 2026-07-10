@@ -186,6 +186,14 @@ impl Plugin for ModPlugin {
             log::info!("loaded mod `{}` from {root:?}", manifest.id);
         }
 
+        // Replays record the loaded mod set and warn on playback if it differs.
+        app.world_mut().insert_resource(fulcrum_core::ReplayModSet(
+            registry
+                .mods
+                .iter()
+                .map(|m| (m.id.clone(), m.version.clone()))
+                .collect(),
+        ));
         app.world_mut().insert_resource(registry);
         app.world_mut().insert_resource(runtime);
         app.add_systems(Startup, lua_init_stage);

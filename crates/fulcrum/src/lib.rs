@@ -56,11 +56,11 @@ pub mod prelude {
     pub use fulcrum_asset::{AssetServer, Assets, Handle};
     pub use fulcrum_audio::{Audio, AudioPlugin, PlayParams, Sound, SoundLoader};
     pub use fulcrum_core::{
-        Added, Bundle, Changed, Color, Commands, Component, DEFAULT_SEED, Entity, Event,
-        EventReader, EventWriter, FixedUpdate, Fulcrum, FulcrumConfig, FxHashMap, FxHashSet, Input,
-        IntoScheduleConfigs, Key, Local, MouseButton, Or, ParamSet, Plugin, PreRender, Query, Rect,
-        Res, ResMut, Resource, SimRng, Startup, Time, Transform2D, Update, Vec2, With, Without,
-        World, vec2,
+        Added, Bundle, Changed, Color, CommandEvent, CommandOutbox, Commands, Component,
+        DEFAULT_SEED, Entity, Event, EventReader, EventWriter, FixedUpdate, Fulcrum, FulcrumConfig,
+        FxHashMap, FxHashSet, Input, IntoScheduleConfigs, Key, Local, MouseButton, Or, ParamSet,
+        Plugin, PreRender, Query, Rect, Replay, ReplayError, ReplayRecorder, Res, ResMut, Resource,
+        SimRng, Startup, Time, Transform2D, Update, Vec2, With, Without, World, save_replay, vec2,
     };
     pub use fulcrum_core::{Children, Name, Parent};
     pub use fulcrum_mod::{LoadedMod, ModEvent, ModPlugin, ModRegistry};

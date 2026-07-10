@@ -2,14 +2,17 @@
 //! check before treating a click as world input.
 
 use bevy_ecs::prelude::{Local, Or, Query, Res, ResMut, Resource, With};
-use fulcrum_core::{EventWriter, Input, MouseButton, Vec2};
+use fulcrum_core::{
+    CommandEvent, CommandOutbox, EventReader, EventWriter, Input, MouseButton, Vec2,
+};
 use fulcrum_render::{Camera2D, WindowInfo};
 
 use crate::node::{UiId, UiRect};
 use crate::widgets::{ButtonState, UiButton, UiImage, UiPanel};
 
-/// A UI interaction the simulation can react to. Buffered like input: readable from
-/// `FixedUpdate` for the tick it was emitted in (and the next).
+/// A UI interaction the simulation can react to. Clicks travel as `ui:click` commands (so
+/// replays capture them) and are turned back into `UiEvent`s at the start of each tick:
+/// readable from `FixedUpdate` for that tick and the next.
 #[derive(fulcrum_core::Event, Clone, Debug)]
 pub enum UiEvent {
     /// A button with this [`UiId`] was clicked (pressed and released on it).
@@ -33,7 +36,7 @@ pub(crate) fn interact_ui(
     window: Option<Res<WindowInfo>>,
     input: Option<Res<Input>>,
     mut focus: ResMut<UiFocus>,
-    mut events: EventWriter<UiEvent>,
+    mut outbox: ResMut<CommandOutbox>,
     mut was_down: Local<bool>,
     mut pressed_id: Local<Option<String>>,
 ) {
@@ -73,12 +76,25 @@ pub(crate) fn interact_ui(
                 && let Some(id) = id
                 && pressed_id.as_deref() == Some(id.0.as_str())
             {
-                events.write(UiEvent::Clicked(id.0.clone()));
+                outbox.send("ui:click", id.0.clone());
             }
             state.pressed = false;
         }
     }
     if released_edge {
         *pressed_id = None;
+    }
+}
+
+/// `FixedUpdate` system (registered first by `UiPlugin`): turns `ui:click` commands — live or
+/// replayed — back into [`UiEvent`]s for game systems.
+pub(crate) fn dispatch_ui_commands(
+    mut commands: EventReader<CommandEvent>,
+    mut events: EventWriter<UiEvent>,
+) {
+    for command in commands.read() {
+        if command.name == "ui:click" {
+            events.write(UiEvent::Clicked(command.payload.clone()));
+        }
     }
 }

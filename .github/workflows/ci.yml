@@ -33,3 +33,22 @@ jobs:
           mkdir -p ~/.local/bin
           curl -sSL https://github.com/rust-lang/mdBook/releases/download/v0.5.4/mdbook-v0.5.4-x86_64-unknown-linux-gnu.tar.gz | tar -xz -C ~/.local/bin
           ~/.local/bin/mdbook build book
+
+  # The determinism gate: every milestone game's seeded/scripted runs plus replay
+  # record/playback round-trips, in release (the shipped math). A hash divergence anywhere
+  # fails the build — this is what keeps the determinism promise honest.
+  determinism:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install winit system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libwayland-dev libxkbcommon-dev libudev-dev libasound2-dev
+      - name: Install Rust toolchain (from rust-toolchain.toml)
+        run: rustup show active-toolchain
+      - uses: Swatinem/rust-cache@v2
+      - name: Determinism harness (seeded runs, twice each)
+        run: cargo test --workspace --release determinism -- --nocapture
+      - name: Replay round-trips (record -> playback, hash-checked)
+        run: cargo test --workspace --release replay -- --nocapture

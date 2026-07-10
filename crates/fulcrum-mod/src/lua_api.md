@@ -48,6 +48,8 @@ fulcrum.tick()                       -- current simulation tick (integer)
 fulcrum.input.pressed("Space")       -- tick-sampled keyboard (also just_pressed)
 fulcrum.emit("boom", { power = 7 })  -- sim event: Rust reads EventReader<ModEvent>;
                                      -- other mods' on_event("boom") handlers hear it too
+fulcrum.emit_command("wave", { n = 3 })  -- player-command channel: recorded into replays;
+                                         -- Rust reads EventReader<CommandEvent> next tick
 fulcrum.audio.play("sounds/boom.ogg")-- cosmetic playback (loads through the VFS)
 fulcrum.log("hello")                 -- info log, prefixed with your mod id
 print("also fine")                   -- same

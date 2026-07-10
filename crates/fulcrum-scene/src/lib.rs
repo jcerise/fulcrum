@@ -5,6 +5,7 @@ pub mod defs;
 pub mod prefab;
 pub mod registry;
 pub mod scene;
+pub mod state_hash;
 pub(crate) mod value_de;
 
 use fulcrum_core::{Component, Fulcrum, IntoScheduleConfigs, Plugin, Transform2D, Update};
@@ -15,6 +16,7 @@ pub use defs::{AnimationPlayerDef, AnimatorDef, SpriteDef, TextDef, TilemapDef};
 pub use prefab::{PrefabAsset, PrefabLoader, PrefabQueue, SpawnPrefabExt};
 pub use registry::{ComponentOps, ComponentRegistry, SceneError};
 pub use scene::{SceneAsset, SceneLoader, SceneMember, SceneSpawner, save_world};
+pub use state_hash::state_hash;
 
 fn registry_mut(app: &mut Fulcrum) -> bevy_ecs::world::Mut<'_, ComponentRegistry> {
     if app.world().get_resource::<ComponentRegistry>().is_none() {
@@ -117,6 +119,11 @@ impl Plugin for ScenePlugin {
             .insert_resource(fulcrum_asset::Assets::<SceneAsset>::default());
         app.world_mut().insert_resource(PrefabQueue::default());
         app.world_mut().insert_resource(SceneSpawner::default());
+        // Registered components are exactly what replays fingerprint for divergence checks.
+        app.world_mut()
+            .insert_resource(fulcrum_core::StateHasher(std::sync::Arc::new(
+                state_hash::state_hash,
+            )));
         // Queued prefab/scene work applies first thing each tick. NOTE: add DefaultPlugins
         // before game plugins so this runs before game systems (single-threaded FixedUpdate
         // runs in registration order for unordered systems).

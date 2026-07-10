@@ -42,8 +42,38 @@ systems that write the same data explicitly (`.chain()`, `.before()`, `.after()`
 topological order of ambiguous systems is an implementation detail that can shift when systems
 are added or removed. A good default for game logic: one `.chain()`ed tuple.
 
+## Replays
+
+The payoff for the five rules: a `.freplay` file (header + per-tick records, postcard-encoded)
+reproduces a run exactly on the same binary.
+
+- **What's recorded per tick:** the sampled `Input` delta (including `mouse_world`, since the
+  camera mapping is cosmetic and can't be reconstructed) and every `CommandEvent` drained from
+  the `CommandOutbox`. Commands are the lockstep-shaped channel — UI clicks travel as
+  `ui:click` commands, Lua mods use `fulcrum.emit_command`, and games send orders with
+  `CommandOutbox::send`. During playback, locally re-derived commands are discarded and the
+  recorded stream is injected, so input-derived commands never double.
+- **Recording:** set `FulcrumConfig::record_replays` (records from tick 0; roughly 6 MB/hour at
+  60 Hz) or call `ReplayRecorder::start_recording()` before the first tick. Save with
+  `Fulcrum::save_replay(path)` or `fulcrum_core::replay::save_replay(&mut world, path)` from an
+  exclusive system.
+- **Playback:** `Fulcrum::run_replay(path)` (headless, to completion) or
+  `Fulcrum::start_playback(replay)` before `run()` (windowed). The header reseeds `SimRng`;
+  mismatched game/engine/tick-rate/mod-set headers warn first.
+- **Divergence checks:** while recording, a state hash is embedded every 60 ticks (plus a final
+  one on save); playback recomputes and compares each, and the first mismatch errors with its
+  tick number — your entry point for hunting determinism bugs. The hash (installed by
+  `ScenePlugin`) covers `Time::tick`, the `SimRng` stream position, and every **registered**
+  component in canonical order. Unregistered components are invisible to it: register anything
+  whose divergence you want caught.
+- **Caveat:** `UiFocus::pointer_over_ui` is cosmetic state; if simulation logic reads it, route
+  the decision through a command instead or replays won't capture it.
+
 ## Enforcement
 
 `crates/fulcrum-core/tests/determinism.rs` runs seeded simulations twice and asserts
-bit-identical world state. Every phase adds its features to this harness; phase 4 promotes it to
-a CI gate covering every milestone game plus replay round-trips.
+bit-identical world state, and every milestone game ships its own scripted determinism and
+replay round-trip tests. CI runs them all in release as a dedicated `determinism` job — a hash
+divergence anywhere fails the build. (Verified to catch real nondeterminism: a wall-clock
+dependence temporarily added to the dungeon's movement failed the harness at the first hash
+checkpoint after it took effect.)
