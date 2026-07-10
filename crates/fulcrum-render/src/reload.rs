@@ -48,6 +48,7 @@ pub(crate) fn reload_render_assets(
     mut fonts: ResMut<Assets<Font>>,
     mut cache: ResMut<GlyphCache>,
     mut tilemaps: ResMut<Assets<TilemapAsset>>,
+    mut effects: ResMut<Assets<crate::particles::ParticleEffectAsset>>,
     mut renderer: Option<ResMut<crate::batch::SpriteRenderer>>,
 ) {
     for event in events.read() {
@@ -83,6 +84,20 @@ pub(crate) fn reload_render_assets(
         }
         if tilemaps.handle_for_path(path).is_some() {
             crate::tilemap::reload_tilemap(&server, &mut tilemaps, path);
+        }
+        if let Some(handle) = effects.handle_for_path(path) {
+            match server
+                .read_bytes(path)
+                .and_then(|bytes| crate::particles::parse_effect(path, &bytes))
+            {
+                Ok(asset) => {
+                    let asset =
+                        crate::particles::resolve_effect(asset, &server, &mut textures, &gpu);
+                    effects.replace(handle, asset);
+                    log::info!("reloaded effect {path}");
+                }
+                Err(error) => log::error!("hot reload: {error}"),
+            }
         }
     }
 }

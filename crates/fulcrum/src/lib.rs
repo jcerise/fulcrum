@@ -65,7 +65,8 @@ pub mod prelude {
     pub use fulcrum_core::{Children, Name, Parent};
     pub use fulcrum_mod::{LoadedMod, ModEvent, ModPlugin, ModRegistry};
     pub use fulcrum_render::{
-        AssetLoader, Camera2D, DefaultFont, Font, Gizmos, HAlign, RenderStats, ScalingMode, Sprite,
+        AssetLoader, Camera2D, DefaultFont, EffectLoader, EmitMode, Font, Gizmos, HAlign,
+        ParticleEffectAsset, ParticleEmitter, RenderStats, ScalingMode, SpawnEffectExt, Sprite,
         SpriteRegion, SpriteSheet, Text, Texture, TileLayer, Tilemap, TilemapAsset, TilemapLoader,
         WindowInfo, WindowPlugin,
     };

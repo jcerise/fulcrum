@@ -80,6 +80,13 @@ impl Plugin for WindowPlugin {
         app.world_mut()
             .insert_resource(crate::batch::UiQuads::default());
         app.world_mut()
+            .insert_resource(crate::particles::AdditiveQuads::default());
+        app.world_mut()
+            .insert_resource(Assets::<crate::particles::ParticleEffectAsset>::default());
+        app.world_mut()
+            .insert_resource(crate::particles::FxRng::default());
+        app.add_systems(fulcrum_core::Update, crate::particles::simulate_particles);
+        app.world_mut()
             .insert_resource(crate::camera::Camera2D::default());
         let gizmos_enabled = app.config().gizmos_enabled;
         app.world_mut()

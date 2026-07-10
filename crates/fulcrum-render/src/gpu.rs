@@ -106,6 +106,17 @@ fn render_with(world: &mut World, renderer: &mut crate::batch::SpriteRenderer) {
     } else {
         configured_clear
     };
+    // Build the additive (particle) stage from this frame's world-space quads.
+    let mut additive_quads =
+        std::mem::take(&mut world.resource_mut::<crate::particles::AdditiveQuads>().0);
+    world.resource_scope(
+        |world, textures: bevy_ecs::world::Mut<fulcrum_asset::Assets<crate::texture::Texture>>| {
+            let gpu = world.resource::<GpuContext>();
+            renderer.build_additive(gpu, &textures, &mut additive_quads);
+        },
+    );
+    world.resource_mut::<crate::particles::AdditiveQuads>().0 = additive_quads;
+
     // Build the UI stage from this frame's screen-space quads.
     let mut ui_quads = std::mem::take(&mut world.resource_mut::<crate::batch::UiQuads>().0);
     world.resource_scope(
@@ -199,6 +210,7 @@ fn render_with(world: &mut World, renderer: &mut crate::batch::SpriteRenderer) {
             );
         }
         renderer.draw(gpu, &camera_frame, configured_clear, &mut pass);
+        renderer.draw_additive(gpu, &mut pass);
         renderer.draw_ui(gpu, &camera_frame, &mut pass);
         renderer.draw_gizmos(gpu, &gizmo_vertices, &mut pass);
     }

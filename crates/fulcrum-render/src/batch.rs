@@ -66,6 +66,11 @@ pub struct SpriteRenderer {
     gizmo_pipeline: wgpu::RenderPipeline,
     gizmo_buffer: wgpu::Buffer,
     gizmo_capacity: u64,
+    additive_pipeline: wgpu::RenderPipeline,
+    additive_vertex_buffer: wgpu::Buffer,
+    additive_vertex_capacity: u64,
+    additive_vertices: Vec<SpriteVertex>,
+    additive_batches: Vec<Batch>,
     ui_globals_buffer: wgpu::Buffer,
     ui_globals_bind_group: wgpu::BindGroup,
     ui_vertex_buffer: wgpu::Buffer,
@@ -141,6 +146,44 @@ impl SpriteRenderer {
                 targets: &[Some(wgpu::ColorTargetState {
                     format: surface_format,
                     blend: Some(wgpu::BlendState::ALPHA_BLENDING),
+                    write_mask: wgpu::ColorWrites::ALL,
+                })],
+            }),
+            primitive: wgpu::PrimitiveState::default(),
+            depth_stencil: None,
+            multisample: wgpu::MultisampleState::default(),
+            multiview_mask: None,
+            cache: None,
+        });
+
+        // Additive (glow) variant of the sprite pipeline, for particles.
+        let additive_pipeline = device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
+            label: Some("sprite pipeline (additive)"),
+            layout: Some(&pipeline_layout),
+            vertex: wgpu::VertexState {
+                module: &shader,
+                entry_point: Some("vs_main"),
+                compilation_options: Default::default(),
+                buffers: &[VERTEX_LAYOUT],
+            },
+            fragment: Some(wgpu::FragmentState {
+                module: &shader,
+                entry_point: Some("fs_main"),
+                compilation_options: Default::default(),
+                targets: &[Some(wgpu::ColorTargetState {
+                    format: surface_format,
+                    blend: Some(wgpu::BlendState {
+                        color: wgpu::BlendComponent {
+                            src_factor: wgpu::BlendFactor::SrcAlpha,
+                            dst_factor: wgpu::BlendFactor::One,
+                            operation: wgpu::BlendOperation::Add,
+                        },
+                        alpha: wgpu::BlendComponent {
+                            src_factor: wgpu::BlendFactor::One,
+                            dst_factor: wgpu::BlendFactor::One,
+                            operation: wgpu::BlendOperation::Add,
+                        },
+                    }),
                     write_mask: wgpu::ColorWrites::ALL,
                 })],
             }),
@@ -278,6 +321,11 @@ impl SpriteRenderer {
             gizmo_pipeline,
             gizmo_buffer,
             gizmo_capacity,
+            additive_pipeline,
+            additive_vertex_buffer: Self::create_vertex_buffer(device, INITIAL_VERTEX_CAPACITY),
+            additive_vertex_capacity: INITIAL_VERTEX_CAPACITY,
+            additive_vertices: Vec::new(),
+            additive_batches: Vec::new(),
             ui_globals_buffer,
             ui_globals_bind_group,
             ui_vertex_buffer,
@@ -319,6 +367,67 @@ impl SpriteRenderer {
             }
         }
         quads.clear();
+    }
+
+    /// Build the additive (particle) vertex list from world-space quads, push order.
+    pub(crate) fn build_additive(
+        &mut self,
+        gpu: &GpuContext,
+        textures: &Assets<Texture>,
+        quads: &mut Vec<ExtractedSprite>,
+    ) {
+        self.additive_vertices.clear();
+        self.additive_batches.clear();
+        for item in quads.iter() {
+            if let Some(texture) = textures.get(item.texture) {
+                self.bind_group_for(gpu, item.texture.id(), texture);
+            }
+            let start = self.additive_vertices.len() as u32;
+            let quad = [0usize, 1, 2, 0, 2, 3].map(|i| SpriteVertex {
+                position: item.corners[i].into(),
+                uv: item.uv[i],
+                color: item.color,
+            });
+            self.additive_vertices.extend_from_slice(&quad);
+            match self.additive_batches.last_mut() {
+                Some(batch) if batch.texture_id == item.texture.id() => {
+                    batch.vertex_range.end = start + 6;
+                }
+                _ => self.additive_batches.push(Batch {
+                    texture_id: item.texture.id(),
+                    vertex_range: start..start + 6,
+                }),
+            }
+        }
+        quads.clear();
+    }
+
+    /// Draw the additive stage (world projection; after alpha sprites, before UI).
+    pub(crate) fn draw_additive(&mut self, gpu: &GpuContext, pass: &mut wgpu::RenderPass<'_>) {
+        if self.additive_batches.is_empty() {
+            return;
+        }
+        let needed = self.additive_vertices.len() as u64;
+        if needed > self.additive_vertex_capacity {
+            self.additive_vertex_capacity = needed.next_power_of_two();
+            self.additive_vertex_buffer =
+                Self::create_vertex_buffer(&gpu.device, self.additive_vertex_capacity);
+        }
+        gpu.queue.write_buffer(
+            &self.additive_vertex_buffer,
+            0,
+            bytemuck::cast_slice(&self.additive_vertices),
+        );
+        pass.set_pipeline(&self.additive_pipeline);
+        pass.set_bind_group(0, &self.globals_bind_group, &[]);
+        pass.set_vertex_buffer(0, self.additive_vertex_buffer.slice(..));
+        for batch in &self.additive_batches {
+            let Some(bind_group) = self.texture_bind_groups.get(&batch.texture_id) else {
+                continue;
+            };
+            pass.set_bind_group(1, bind_group, &[]);
+            pass.draw(batch.vertex_range.clone(), 0..1);
+        }
     }
 
     /// Draw the UI stage (after world sprites, before gizmos).
