@@ -1,11 +1,14 @@
-//! Fulcrum spatial helpers: a deterministic uniform-grid index ([`SpatialGrid`]). Everything here is plain deterministic
+//! Fulcrum spatial helpers: a deterministic uniform-grid index ([`SpatialGrid`]) plus grid
+//! pathfinding ([`NavGrid`], A*, flow fields). Everything here is plain deterministic
 //! computation over simulation state — safe anywhere in `FixedUpdate`.
 
 pub mod grid;
+pub mod nav;
 
 use fulcrum_core::{FixedUpdate, Fulcrum, Plugin};
 
 pub use grid::{SpatialGrid, SpatialIndexed};
+pub use nav::{FlowField, NavGrid, astar, simplify_path};
 
 /// Installs the spatial grid and its per-tick rebuild. Add **before** your game plugin so
 /// queries see this tick's positions.

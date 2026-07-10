@@ -75,7 +75,9 @@ pub mod prelude {
         RegisterComponentExt, SceneAsset, SceneError, SceneLoader, SceneMember, ScenePlugin,
         SceneSpawner, SpawnPrefabExt, SpriteDef, TextDef, TilemapDef, save_world,
     };
-    pub use fulcrum_spatial::{SpatialGrid, SpatialIndexed, SpatialPlugin};
+    pub use fulcrum_spatial::{
+        FlowField, NavGrid, SpatialGrid, SpatialIndexed, SpatialPlugin, astar, simplify_path,
+    };
     pub use fulcrum_ui::{
         Anchor, ButtonStyle, DebugUi, DebugUiFocus, DebugUiPlugin, StackDir, UiButton, UiEvent,
         UiFocus, UiId, UiImage, UiLabel, UiLoader, UiNode, UiPanel, UiPlugin, UiQuery, UiRect,

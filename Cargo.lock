@@ -1227,6 +1227,7 @@ dependencies = [
  "fulcrum-mod",
  "fulcrum-render",
  "fulcrum-scene",
+ "fulcrum-spatial",
  "fulcrum-ui",
  "image",
 ]
@@ -1292,6 +1293,7 @@ dependencies = [
  "fulcrum-audio",
  "fulcrum-core",
  "fulcrum-scene",
+ "fulcrum-spatial",
  "log",
  "mlua",
  "ron",
@@ -1335,6 +1337,17 @@ dependencies = [
  "rustc-hash 2.1.3",
  "serde",
  "thiserror 2.0.18",
+]
+
+[[package]]
+name = "fulcrum-spatial"
+version = "0.1.0"
+dependencies = [
+ "bevy_ecs",
+ "fulcrum-core",
+ "fulcrum-render",
+ "log",
+ "rustc-hash 2.1.3",
 ]
 
 [[package]]
