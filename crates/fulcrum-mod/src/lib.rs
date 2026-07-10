@@ -2,5 +2,8 @@
 //! loading, and the Lua↔ECS bindings (subsequent steps).
 
 pub mod manifest;
+pub mod runtime;
+pub(crate) mod sandbox;
 
 pub use manifest::{ManifestError, ModManifest, parse_manifest};
+pub use runtime::LuaRuntime;

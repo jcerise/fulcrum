@@ -4,7 +4,7 @@ title: "Phase 4: Power features — modding (VFS + Lua), particles, spatial/path
 status: in-progress
 priority: 4
 created: 2026-07-08
-steps_completed: 1
+steps_completed: 2
 steps_total: 9
 tags: [engine, modding, lua, vfs, particles, pathfinding, determinism, replay]
 ---
