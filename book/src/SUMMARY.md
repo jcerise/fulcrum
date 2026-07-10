@@ -15,6 +15,13 @@
 - [The Development Loop: Tools](ch09-tools.md)
 - [Determinism and Testing](ch10-determinism.md)
 
+# Power Features
+
+- [Sparks and Fireflies: Particles](ch11-particles.md)
+- [The Fox Learns to Hunt: Spatial Queries and Pathfinding](ch12-spatial.md)
+- [Mods: the VFS and Lua](ch13-modding.md)
+- [Replays: the Payoff](ch14-replays.md)
+
 # Appendices
 
 - [Cheat Sheet](appendix-cheatsheet.md)

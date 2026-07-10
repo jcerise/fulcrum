@@ -1,0 +1,6 @@
+Mod(
+    id: "more_gems",
+    name: "More Gems",
+    version: "1.0.0",
+    scripts: ["scripts/init.lua"],
+)

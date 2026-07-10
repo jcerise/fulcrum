@@ -397,6 +397,12 @@ pub struct TilemapLoader<'w> {
 
 impl TilemapLoader<'_> {
     /// Load a `.map.ron` tilemap (and its tile texture), deduplicated by path.
+    /// Read access to loaded maps — lets a system use the loader and inspect the asset it
+    /// just loaded without a conflicting `Res<Assets<TilemapAsset>>` parameter.
+    pub fn assets(&self) -> &Assets<TilemapAsset> {
+        &self.tilemaps
+    }
+
     pub fn load(&mut self, path: &str) -> Result<Handle<TilemapAsset>, AssetError> {
         let _ = &self.config; // reserved for future per-map settings
         if let Some(handle) = self.tilemaps.handle_for_path(path) {

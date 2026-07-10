@@ -26,9 +26,10 @@ Three opinions shape everything in it:
 
 We build one game, from nothing: **Grove** — a little top-down game about collecting gems in a
 hedge garden while a fox hunts you. Every chapter adds one engine concept and one piece of the
-game. All the code is real: each chapter's complete program lives in
-`games/grove/examples/` in the Fulcrum repository and compiles in CI, so nothing on these
-pages can silently rot.
+game; Part I (chapters 1–10) builds Grove, and Part II (chapters 11–14) layers the power
+features on top — particles, spatial queries and pathfinding, mods, and replays. All the code
+is real: each chapter's complete program lives in `games/grove/examples/` in the Fulcrum
+repository and compiles in CI, so nothing on these pages can silently rot.
 
 ```text
 cargo run -p grove --example ch01_window   # each chapter, runnable

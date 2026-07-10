@@ -57,12 +57,15 @@ state, a stray `HashMap` iteration — and the fix is always to move the offendi
 right side of the line. The discipline pays for itself the first time a bug report comes with
 a replay file instead of a paragraph.
 
-## Where Grove ends and your game begins
+## Grove is built — now for the power tools
 
-You've now touched every major component: the app and plugins, ECS, the two schedules, input,
+You've now touched every core component: the app and plugins, ECS, the two schedules, input,
 sprites, cameras, tilemaps, animation and state machines, audio, events, prefabs, scenes, hot
-reload, UI, gizmos, the inspector, and the determinism contract. The three bigger games in
-the repository — Pong, Asteroids, and the dungeon crawl — are the same ideas at increasing
-scale, and every one of them is a worked example you can read in an afternoon.
+reload, UI, gizmos, the inspector, and the determinism contract. You could stop here and ship
+a game.
 
-Go make something. The fox is waiting.
+But the discipline you just proved out — a deterministic sim fed only by data — is exactly
+what the engine's power features are built on. Part II adds them one at a time: particles
+(chapter 11), spatial queries and pathfinding for the fox and for armies (chapter 12), mods
+via the VFS and sandboxed Lua (chapter 13), and finally replays (chapter 14) — the direct
+payoff of everything in this chapter.

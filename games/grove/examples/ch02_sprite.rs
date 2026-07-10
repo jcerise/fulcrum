@@ -16,7 +16,10 @@ fn main() {
         clear_color: Color::rgb(0.16, 0.24, 0.16),
         ..Default::default()
     })
-    .insert_resource(AssetServer::new(concat!(env!("CARGO_MANIFEST_DIR"), "/assets")))
+    .insert_resource(AssetServer::new(concat!(
+        env!("CARGO_MANIFEST_DIR"),
+        "/assets"
+    )))
     .with_plugin(DefaultPlugins)
     .add_startup(setup)
     .run();

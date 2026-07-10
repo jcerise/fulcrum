@@ -11,7 +11,10 @@ fn setup(
     mut maps: TilemapLoader,
     mut camera: ResMut<Camera2D>,
 ) {
-    camera.scaling = ScalingMode::Letterbox { width: 480.0, height: 270.0 };
+    camera.scaling = ScalingMode::Letterbox {
+        width: 480.0,
+        height: 270.0,
+    };
     camera.center = vec2(72.0, 72.0);
     let map = maps.load("maps/grove.map.ron").expect("map loads");
     commands.spawn((Tilemap { asset: map, z: 0.0 }, Transform2D::default()));
@@ -29,7 +32,9 @@ fn blocked(
     position: Vec2,
 ) -> bool {
     for (map, transform) in maps.iter() {
-        let Some(asset) = assets.get(map.asset) else { continue };
+        let Some(asset) = assets.get(map.asset) else {
+            continue;
+        };
         match asset.world_to_tile(transform, position) {
             Some((x, y)) => {
                 if asset.tile_at("walls", x, y).unwrap_or(0) != 0 {
@@ -50,10 +55,18 @@ fn movement(
     time: Res<Time>,
 ) {
     let mut dir = Vec2::ZERO;
-    if input.pressed(Key::A) { dir.x -= 1.0 }
-    if input.pressed(Key::D) { dir.x += 1.0 }
-    if input.pressed(Key::S) { dir.y -= 1.0 }
-    if input.pressed(Key::W) { dir.y += 1.0 }
+    if input.pressed(Key::A) {
+        dir.x -= 1.0
+    }
+    if input.pressed(Key::D) {
+        dir.x += 1.0
+    }
+    if input.pressed(Key::S) {
+        dir.y -= 1.0
+    }
+    if input.pressed(Key::W) {
+        dir.y += 1.0
+    }
     let step = dir.normalize_or_zero() * 110.0 * time.fixed_delta;
     for mut transform in &mut players {
         // Axis-separated so you slide along walls instead of sticking to them.
@@ -91,7 +104,10 @@ fn main() {
         clear_color: Color::rgb(0.16, 0.24, 0.16),
         ..Default::default()
     })
-    .insert_resource(AssetServer::new(concat!(env!("CARGO_MANIFEST_DIR"), "/assets")))
+    .insert_resource(AssetServer::new(concat!(
+        env!("CARGO_MANIFEST_DIR"),
+        "/assets"
+    )))
     .with_plugin(DefaultPlugins)
     .add_startup(setup)
     .add_system(movement)

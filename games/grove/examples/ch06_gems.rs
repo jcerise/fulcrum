@@ -48,12 +48,24 @@ fn setup(
     let _ = &mut assets;
 }
 
-fn movement(mut players: Query<&mut Transform2D, With<Player>>, input: Res<Input>, time: Res<Time>) {
+fn movement(
+    mut players: Query<&mut Transform2D, With<Player>>,
+    input: Res<Input>,
+    time: Res<Time>,
+) {
     let mut dir = Vec2::ZERO;
-    if input.pressed(Key::A) { dir.x -= 1.0 }
-    if input.pressed(Key::D) { dir.x += 1.0 }
-    if input.pressed(Key::S) { dir.y -= 1.0 }
-    if input.pressed(Key::W) { dir.y += 1.0 }
+    if input.pressed(Key::A) {
+        dir.x -= 1.0
+    }
+    if input.pressed(Key::D) {
+        dir.x += 1.0
+    }
+    if input.pressed(Key::S) {
+        dir.y -= 1.0
+    }
+    if input.pressed(Key::W) {
+        dir.y += 1.0
+    }
     for mut transform in &mut players {
         transform.translation += dir.normalize_or_zero() * 150.0 * time.fixed_delta;
     }
@@ -103,7 +115,10 @@ fn main() {
         clear_color: Color::rgb(0.16, 0.24, 0.16),
         ..Default::default()
     })
-    .insert_resource(AssetServer::new(concat!(env!("CARGO_MANIFEST_DIR"), "/assets")))
+    .insert_resource(AssetServer::new(concat!(
+        env!("CARGO_MANIFEST_DIR"),
+        "/assets"
+    )))
     .insert_resource(Collected::default())
     .with_plugin(DefaultPlugins)
     .add_event::<GemCollected>()

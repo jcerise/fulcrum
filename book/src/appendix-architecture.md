@@ -4,13 +4,15 @@ For the curious and the contributing. Games only ever depend on the facade:
 
 ```text
 fulcrum            facade: DefaultPlugins + the prelude
-├── fulcrum-core   app builder, schedules, Time, Input, SimRng, Transform2D, math
-├── fulcrum-render window/wgpu, sprite batcher, camera, text, tilemaps, gizmos, hot-reload pump
-├── fulcrum-asset  Handle<T>/Assets<T>, AssetServer (the single disk seam), file watcher
+├── fulcrum-core   app builder, schedules, Time, Input, SimRng, Transform2D, math, replays
+├── fulcrum-render window/wgpu, sprite batcher, camera, text, tilemaps, particles, gizmos
+├── fulcrum-asset  Handle<T>/Assets<T>, AssetServer over a layered VFS, file watcher
 ├── fulcrum-audio  kira-backed Sound/Audio
 ├── fulcrum-anim   clips, Aseprite import, animation state machines
-├── fulcrum-scene  ComponentRegistry, prefabs, scenes, *Def resolvers
-└── fulcrum-ui     retained game UI + the egui debug inspector
+├── fulcrum-scene  ComponentRegistry, prefabs, scenes, *Def resolvers, the replay state hash
+├── fulcrum-ui     retained game UI + the egui debug inspector
+├── fulcrum-spatial uniform-grid index, NavGrid/A*, flow fields
+└── fulcrum-mod    mod discovery/mounting, sandboxed Lua runtime, the fulcrum.* API
 ```
 
 Decisions you're building on (and where they're enforced):
@@ -23,18 +25,24 @@ Decisions you're building on (and where they're enforced):
 - **One draw path.** Sprites, text glyphs, tilemap chunks, and UI all feed one batcher
   (world-space and screen-space stages); gizmos are the only immediate-mode API.
 - **Synchronous, seam-guarded assets.** Every disk read goes through
-  `AssetServer::read_bytes` — hot reload hooks it today; the planned mod VFS (phase 4)
-  layers over the same seam.
+  `AssetServer::read_bytes`, which resolves against a stack of mounts — the base game at the
+  bottom, mods layered above in load order. Hot reload and modding are the same seam.
 - **Sim data vs. cosmetic dressing.** Anything gameplay reads (tilemap tiles, animation
   state) loads deterministically inside the simulation; GPU-only work (textures, glyph
   atlases) attaches from frame-side systems. That split is why headless tests and windowed
   play behave identically.
 - **Determinism as a tested contract** — `docs/determinism.md` states the rules; every
-  milestone game carries a same-seed bit-identical test, headed for a CI-gated replay
-  harness in phase 4.
+  milestone game carries a same-seed bit-identical test *and* a record→playback replay
+  round-trip, and CI runs them all in release as a dedicated gate. A state hash embedded
+  every 60 ticks turns "the runs differ somewhere" into "state diverged at tick N."
+- **Two recorded channels.** Replays capture the tick-sampled input delta and the
+  `CommandOutbox` stream — the lockstep-shaped design that would carry networking later.
+  Cosmetic state (selection, camera, particles) is deliberately unrecorded and re-derived.
+- **Lua inside the tick.** Mod scripts run in an exclusive `FixedUpdate` stage against the
+  component registry, sandboxed (no io, sim-clock time, per-mod deterministic RNG, an
+  instruction budget) so mods inherit the determinism contract instead of threatening it.
 
-The four games in `games/` double as the engine's integration tests, in ascending order of
-ambition: `pong` (phase 1: core loop), `asteroids` (phase 2: sheets/audio/text),
-`dungeon` (phase 3: fully data-driven), and `grove` (this book). Phase 4 — modding via a
-layered VFS + sandboxed Lua, particles, spatial queries and pathfinding, and replay files —
-is specced in `plans/004-power-features.md`.
+The five games in `games/` double as the engine's integration tests, in ascending order of
+ambition: `pong` (phase 1: core loop), `asteroids` (phase 2: sheets/audio/text), `dungeon`
+(phase 3: fully data-driven), `grove` (this book), and `rts-slice` (phase 4: 200 units on
+flow fields, Lua-scripted waves, a sample mod, and battles that replay hash-clean).
