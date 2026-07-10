@@ -1288,7 +1288,9 @@ version = "0.1.0"
 dependencies = [
  "bevy_ecs",
  "fulcrum-asset",
+ "fulcrum-audio",
  "fulcrum-core",
+ "fulcrum-scene",
  "log",
  "mlua",
  "ron",

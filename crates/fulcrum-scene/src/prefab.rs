@@ -204,6 +204,30 @@ fn apply_node(
     }
 }
 
+/// Immediately apply a prefab to a reserved entity (Lua bindings; runs inside the exclusive
+/// mod stage, so "immediate" is still deterministic call order).
+pub fn apply_spawn_now(
+    world: &mut World,
+    entity: Entity,
+    prefab: Handle<PrefabAsset>,
+    position: Option<Vec2>,
+) {
+    apply_spawn(
+        world,
+        QueuedSpawn {
+            entity,
+            prefab,
+            position,
+            scene: None,
+        },
+    );
+}
+
+/// Parse prefab RON text (public for the mod bindings; games use [`PrefabLoader`]).
+pub fn parse_prefab_public(path: &str, source: &str) -> Result<PrefabAsset, crate::SceneError> {
+    parse_prefab(path, source)
+}
+
 /// Exclusive system, first in `FixedUpdate`: apply all queued prefab (and scene) work.
 pub(crate) fn apply_spawn_queues(world: &mut World) {
     crate::scene::apply_scene_queues(world);

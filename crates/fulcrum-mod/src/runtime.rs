@@ -47,6 +47,8 @@ pub(crate) struct LuaCtx {
     pub loading: Vec<String>,
     /// Callback registrations made while evaluating a script (drained after each entry runs).
     pub pending: Vec<(String, Registration)>,
+    /// Events emitted via `fulcrum.emit` during the current batch (dispatched afterwards).
+    pub emitted: Vec<(String, ron::Value)>,
 }
 
 /// A callback a script registered.
@@ -99,6 +101,7 @@ impl LuaRuntime {
             mod_roots: FxHashMap::default(),
             loading: Vec::new(),
             pending: Vec::new(),
+            emitted: Vec::new(),
         });
         sandbox::apply(&lua)?;
         install_fulcrum_table(&lua)?;
@@ -222,7 +225,6 @@ impl LuaRuntime {
     }
 
     /// Run `f` with the interpreter locked (used by the bindings layer).
-    #[allow(dead_code)] // consumed by the bindings layer (step 3)
     pub(crate) fn with_lua<R>(&self, f: impl FnOnce(&Lua) -> R) -> R {
         let lua = self.lua.lock().unwrap();
         f(&lua)
