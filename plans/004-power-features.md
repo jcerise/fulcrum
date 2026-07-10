@@ -1,10 +1,10 @@
 ---
 id: power-features
 title: "Phase 4: Power features — modding (VFS + Lua), particles, spatial/pathfinding, replays (milestone: RTS slice)"
-status: in-progress
+status: complete
 priority: 4
 created: 2026-07-08
-steps_completed: 8
+steps_completed: 9
 steps_total: 9
 tags: [engine, modding, lua, vfs, particles, pathfinding, determinism, replay]
 ---
