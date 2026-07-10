@@ -57,10 +57,11 @@ pub mod prelude {
     pub use fulcrum_audio::{Audio, AudioPlugin, PlayParams, Sound, SoundLoader};
     pub use fulcrum_core::{
         Added, Bundle, Changed, Color, CommandEvent, CommandOutbox, Commands, Component,
-        DEFAULT_SEED, Entity, Event, EventReader, EventWriter, FixedUpdate, Fulcrum, FulcrumConfig,
-        FxHashMap, FxHashSet, Input, IntoScheduleConfigs, Key, Local, MouseButton, Or, ParamSet,
-        Plugin, PreRender, Query, Rect, Replay, ReplayError, ReplayRecorder, Res, ResMut, Resource,
-        SimRng, Startup, Time, Transform2D, Update, Vec2, With, Without, World, save_replay, vec2,
+        DEFAULT_SEED, Entity, Event, EventReader, EventWriter, Events, FixedUpdate, Fulcrum,
+        FulcrumConfig, FxHashMap, FxHashSet, Input, IntoScheduleConfigs, Key, Local, MouseButton,
+        Or, ParamSet, Plugin, PreRender, Query, Rect, Replay, ReplayError, ReplayPlayback,
+        ReplayRecorder, Res, ResMut, Resource, SimRng, Startup, Time, Transform2D, Update, Vec2,
+        With, Without, World, save_replay, vec2,
     };
     pub use fulcrum_core::{Children, Name, Parent};
     pub use fulcrum_mod::{LoadedMod, ModEvent, ModPlugin, ModRegistry};
@@ -68,7 +69,7 @@ pub mod prelude {
         AssetLoader, Camera2D, DefaultFont, EffectLoader, EmitMode, Font, Gizmos, HAlign,
         ParticleEffectAsset, ParticleEmitter, RenderStats, ScalingMode, SpawnEffectExt, Sprite,
         SpriteRegion, SpriteSheet, Text, Texture, TileLayer, Tilemap, TilemapAsset, TilemapLoader,
-        WindowInfo, WindowPlugin,
+        WindowInfo, WindowPlugin, load_tilemap_data,
     };
     pub use fulcrum_scene::{
         AnimationPlayerDef, AnimatorDef, ComponentRegistry, PrefabAsset, PrefabLoader,

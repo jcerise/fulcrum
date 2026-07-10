@@ -194,9 +194,10 @@ impl ReplayRecorder {
     }
 }
 
-/// Stop the recorder and write its recording to `path`. Callable from an exclusive system
-/// (`&mut World`) or via [`Fulcrum::save_replay`](crate::Fulcrum::save_replay). A final state
-/// hash of the current world is appended so playback verifies the end state too.
+/// Write the recording captured so far to `path` (the recorder keeps running — call
+/// [`ReplayRecorder::stop`] to end it). Callable from an exclusive system (`&mut World`) or via
+/// [`Fulcrum::save_replay`](crate::Fulcrum::save_replay). A final state hash of the current
+/// world is appended so playback verifies the end state too.
 pub fn save_replay(world: &mut World, path: impl AsRef<Path>) -> Result<(), ReplayError> {
     let final_hash = world
         .get_resource::<StateHasher>()
@@ -215,8 +216,7 @@ pub fn save_replay(world: &mut World, path: impl AsRef<Path>) -> Result<(), Repl
             .unwrap_or_default(),
     };
     let tick = world.resource::<crate::Time>().tick;
-    let mut recorder = world.resource_mut::<ReplayRecorder>();
-    recorder.stop();
+    let recorder = world.resource::<ReplayRecorder>();
     if recorder.started_at_tick != 0 {
         log::warn!(
             "replay recording started at tick {} — playback reproduces runs only from tick 0",

@@ -212,9 +212,12 @@ impl LuaRuntime {
         }
     }
 
-    /// Are there any registered tick callbacks (cheap skip for modless games)?
+    /// Any per-tick work at all — tick callbacks, or event handlers that Rust-emitted
+    /// `ModEvent`s must reach (cheap skip for modless games)?
     pub fn has_tick_work(&self) -> bool {
-        self.mods.iter().any(|(_, c)| !c.on_tick.is_empty())
+        self.mods
+            .iter()
+            .any(|(_, c)| !c.on_tick.is_empty() || !c.on_event.is_empty())
     }
 
     /// Evaluate an expression and stringify the result (tests and the inspector).

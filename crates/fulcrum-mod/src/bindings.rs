@@ -333,16 +333,9 @@ pub fn install(runtime: &LuaRuntime) -> mlua::Result<()> {
                     Some(value) => lua_to_ron(&value)?,
                     None => ron::Value::Unit,
                 };
-                with_world(lua, |world| {
-                    world
-                        .resource_mut::<bevy_ecs::prelude::Messages<ModEvent>>()
-                        .write(ModEvent {
-                            name: name.clone(),
-                            payload: payload.clone(),
-                        });
-                    Ok(())
-                })?;
-                // Also queue for other mods' on_event handlers (dispatched after this batch).
+                // Queued, not written to Messages here: `dispatch_emitted` writes the batch to
+                // the Rust queue and delivers it to other mods, then marks it read for the
+                // Rust->Lua cursor so Lua never hears its own emissions twice.
                 if let Some(mut ctx) = lua.app_data_mut::<LuaCtx>() {
                     ctx.emitted.push((name, payload));
                 }
@@ -452,12 +445,43 @@ pub fn run_init_with_world(runtime: &mut LuaRuntime, world: &mut World) {
     dispatch_emitted(runtime, world);
 }
 
+/// Tracks which `ModEvent`s Lua has already heard, so Rust-emitted events are delivered to
+/// `on_event` handlers exactly once (and Lua's own emissions, marked read by
+/// `dispatch_emitted`, never echo back).
+#[derive(bevy_ecs::prelude::Resource, Default)]
+struct RustEventCursor(bevy_ecs::message::MessageCursor<ModEvent>);
+
+/// Deliver events Rust systems emitted since the last stage to Lua `on_event` handlers.
+fn dispatch_rust_events(runtime: &mut LuaRuntime, world: &mut World) {
+    if world.get_resource::<RustEventCursor>().is_none() {
+        world.insert_resource(RustEventCursor::default());
+    }
+    let mut cursor = std::mem::take(&mut world.resource_mut::<RustEventCursor>().0);
+    let inbound: Vec<(String, ron::Value)> = cursor
+        .read(world.resource::<bevy_ecs::prelude::Messages<ModEvent>>())
+        .map(|event| (event.name.clone(), event.payload.clone()))
+        .collect();
+    world.resource_mut::<RustEventCursor>().0 = cursor;
+    if inbound.is_empty() {
+        return;
+    }
+    with_world_installed(runtime, world, |runtime| {
+        for (name, payload) in inbound {
+            let value = runtime
+                .with_lua(|lua| ron_to_lua(lua, &payload))
+                .unwrap_or(mlua::Value::Nil);
+            runtime.dispatch_event(&name, value);
+        }
+    });
+}
+
 /// Run every mod's `on_tick` with world access, then dispatch mod-emitted events (one round).
 pub fn run_tick_with_world(runtime: &mut LuaRuntime, world: &mut World) {
     let (tick, tick_rate) = {
         let time = world.resource::<Time>();
         (time.tick, (1.0 / time.fixed_delta).round() as u32)
     };
+    dispatch_rust_events(runtime, world);
     with_world_installed(runtime, world, |runtime| {
         runtime.run_tick(tick, tick_rate.max(1))
     });
@@ -474,6 +498,27 @@ fn dispatch_emitted(runtime: &mut LuaRuntime, world: &mut World) {
     });
     if emitted.is_empty() {
         return;
+    }
+    // Make the batch visible to Rust readers (this tick and the next)...
+    {
+        let mut messages = world.resource_mut::<bevy_ecs::prelude::Messages<ModEvent>>();
+        for (name, payload) in &emitted {
+            messages.write(ModEvent {
+                name: name.clone(),
+                payload: payload.clone(),
+            });
+        }
+    }
+    // ...but mark it read for the Rust->Lua cursor: it's delivered to Lua right below.
+    if world.get_resource::<RustEventCursor>().is_none() {
+        world.insert_resource(RustEventCursor::default());
+    }
+    {
+        let mut cursor = std::mem::take(&mut world.resource_mut::<RustEventCursor>().0);
+        let _ = cursor
+            .read(world.resource::<bevy_ecs::prelude::Messages<ModEvent>>())
+            .count();
+        world.resource_mut::<RustEventCursor>().0 = cursor;
     }
     with_world_installed(runtime, world, |runtime| {
         for (name, payload) in emitted {

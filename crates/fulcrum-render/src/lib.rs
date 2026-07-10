@@ -23,5 +23,5 @@ pub use particles::{EffectLoader, EmitMode, ParticleEffectAsset, ParticleEmitter
 pub use sprite::{Sprite, SpriteRegion};
 pub use text::{DefaultFont, Font, GlyphCache, HAlign, Text, UiGlyph};
 pub use texture::{AssetLoader, Texture, WhitePixel};
-pub use tilemap::{TileLayer, Tilemap, TilemapAsset, TilemapLoader};
+pub use tilemap::{TileLayer, Tilemap, TilemapAsset, TilemapLoader, load_tilemap_data};
 pub use window::{WindowEventHooks, WindowHandle, WindowInfo, WindowPlugin};

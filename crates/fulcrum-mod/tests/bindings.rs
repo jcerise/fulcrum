@@ -220,3 +220,48 @@ fn query_circle_finds_indexed_entities_in_order() {
     assert_eq!(got, format!("{},{},nil", expected[0], expected[1]));
     assert_eq!(runtime.eval_string("return tostring(#far)").unwrap(), "0");
 }
+
+#[test]
+fn rust_emitted_events_reach_lua_exactly_once() {
+    let (mut app, mut runtime) = setup(
+        "rustevents",
+        r#"
+        heard = 0
+        echoed = 0
+        fulcrum.on_event("from_rust", function(payload)
+            heard = heard + payload.n
+            fulcrum.emit("echo") -- Lua's own emission must not come back to it
+        end)
+        fulcrum.on_event("echo", function()
+            echoed = echoed + 1
+        end)
+        fulcrum.on_tick(function() end)
+        "#,
+    );
+    app.run_startup();
+    run_init_with_world(&mut runtime, app.world_mut());
+
+    let mut payload = ron::value::Map::new();
+    payload.insert(
+        ron::Value::String("n".into()),
+        ron::Value::Number(ron::value::Number::new(5i64)),
+    );
+    app.world_mut()
+        .resource_mut::<Messages<ModEvent>>()
+        .write(ModEvent {
+            name: "from_rust".into(),
+            payload: ron::Value::Map(payload),
+        });
+    for _ in 0..3 {
+        app.tick();
+        run_tick_with_world(&mut runtime, app.world_mut());
+    }
+    assert_eq!(
+        runtime.eval_string("return tostring(heard)").unwrap(),
+        "5",
+        "delivered exactly once, payload intact"
+    );
+    // The echo is dispatched to handlers in the same batch (other mods hear it), but the
+    // Rust->Lua cursor must not replay it from the Rust queue on later ticks.
+    assert_eq!(runtime.eval_string("return tostring(echoed)").unwrap(), "1");
+}
