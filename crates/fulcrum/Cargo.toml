@@ -14,6 +14,7 @@ fulcrum-audio = { workspace = true }
 fulcrum-anim = { workspace = true }
 fulcrum-scene = { workspace = true }
 fulcrum-ui = { workspace = true }
+fulcrum-mod = { workspace = true }
 # Required for #[derive(Component)] etc. in downstream code: the derive macros emit `bevy_ecs::`
 # paths, which resolve only when the compiling crate depends on bevy_ecs directly.
 bevy_ecs = { workspace = true }

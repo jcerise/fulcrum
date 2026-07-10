@@ -2,10 +2,12 @@
 //! loading, and the Lua↔ECS bindings (subsequent steps).
 
 pub mod bindings;
+pub mod loader;
 pub mod manifest;
 pub mod runtime;
 pub(crate) mod sandbox;
 
 pub use bindings::{ModEvent, run_init_with_world, run_tick_with_world};
+pub use loader::{LoadedMod, ModPlugin, ModRegistry};
 pub use manifest::{ManifestError, ModManifest, parse_manifest};
 pub use runtime::LuaRuntime;

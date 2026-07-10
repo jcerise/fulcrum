@@ -63,6 +63,7 @@ pub mod prelude {
         World, vec2,
     };
     pub use fulcrum_core::{Children, Name, Parent};
+    pub use fulcrum_mod::{LoadedMod, ModEvent, ModPlugin, ModRegistry};
     pub use fulcrum_render::{
         AssetLoader, Camera2D, DefaultFont, Font, Gizmos, HAlign, RenderStats, ScalingMode, Sprite,
         SpriteRegion, SpriteSheet, Text, Texture, TileLayer, Tilemap, TilemapAsset, TilemapLoader,

@@ -1224,6 +1224,7 @@ dependencies = [
  "fulcrum-asset",
  "fulcrum-audio",
  "fulcrum-core",
+ "fulcrum-mod",
  "fulcrum-render",
  "fulcrum-scene",
  "fulcrum-ui",
