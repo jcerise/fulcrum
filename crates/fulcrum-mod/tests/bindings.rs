@@ -182,3 +182,41 @@ fn lua_driven_worlds_are_deterministic() {
     assert_eq!(a, b, "same seeds, same Lua-spawned world");
     assert!(!a.is_empty(), "spawns happened");
 }
+
+#[test]
+fn query_circle_finds_indexed_entities_in_order() {
+    let (mut app, mut runtime) = setup(
+        "circle",
+        r#"
+        fulcrum.on_tick(function()
+            hits = fulcrum.query_circle(0, 0, 30)
+            far = fulcrum.query_circle(1000, 1000, 5)
+        end)
+        "#,
+    );
+    app.run_startup();
+    run_init_with_world(&mut runtime, app.world_mut());
+
+    let world = app.world_mut();
+    let near_a = world.spawn(Transform2D::from_xy(10.0, 0.0)).id();
+    let near_b = world.spawn(Transform2D::from_xy(0.0, 20.0)).id();
+    let far = world.spawn(Transform2D::from_xy(500.0, 0.0)).id();
+    let mut grid = fulcrum_spatial::SpatialGrid::new(64.0);
+    grid.rebuild_for_test(vec![
+        (near_b, fulcrum_core::vec2(0.0, 20.0)),
+        (near_a, fulcrum_core::vec2(10.0, 0.0)),
+        (far, fulcrum_core::vec2(500.0, 0.0)),
+    ]);
+    world.insert_resource(grid);
+
+    app.tick();
+    run_tick_with_world(&mut runtime, app.world_mut());
+
+    let mut expected = [near_a.to_bits() as i64, near_b.to_bits() as i64];
+    expected.sort_unstable();
+    let got = runtime
+        .eval_string("return hits[1] .. \",\" .. tostring(hits[2]) .. \",\" .. tostring(hits[3])")
+        .unwrap();
+    assert_eq!(got, format!("{},{},nil", expected[0], expected[1]));
+    assert_eq!(runtime.eval_string("return tostring(#far)").unwrap(), "0");
+}

@@ -1,0 +1,14 @@
+[package]
+name = "fulcrum-spatial"
+description = "Fulcrum spatial helpers: uniform-grid queries, A*, and flow fields."
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[dependencies]
+fulcrum-core = { workspace = true }
+fulcrum-render = { workspace = true }
+bevy_ecs = { workspace = true }
+rustc-hash = { workspace = true }
+log = { workspace = true }

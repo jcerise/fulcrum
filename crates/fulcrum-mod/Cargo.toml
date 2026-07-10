@@ -10,6 +10,7 @@ repository.workspace = true
 fulcrum-core = { workspace = true }
 fulcrum-asset = { workspace = true }
 fulcrum-scene = { workspace = true }
+fulcrum-spatial = { workspace = true }
 fulcrum-audio = { workspace = true }
 bevy_ecs = { workspace = true }
 mlua = { workspace = true }

@@ -290,6 +290,25 @@ pub fn install(runtime: &LuaRuntime) -> mlua::Result<()> {
         )?;
 
         fulcrum.set(
+            "query_circle",
+            lua.create_function(|lua, (x, y, radius): (f32, f32, f32)| {
+                with_world(lua, |world| {
+                    let hits = lua.create_table()?;
+                    if let Some(grid) = world.get_resource::<fulcrum_spatial::SpatialGrid>() {
+                        for (i, entity) in grid
+                            .query_circle(fulcrum_core::vec2(x, y), radius)
+                            .into_iter()
+                            .enumerate()
+                        {
+                            hits.set(i + 1, entity.to_bits() as i64)?;
+                        }
+                    }
+                    Ok(hits)
+                })
+            })?,
+        )?;
+
+        fulcrum.set(
             "emit",
             lua.create_function(|lua, (name, payload): (String, Option<LuaValue>)| {
                 let payload = match payload {

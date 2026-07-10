@@ -31,6 +31,12 @@ fulcrum.insert(e, "Burning", { ticks_left = 120 })   -- alias of set
 for _, row in ipairs(fulcrum.query("Transform2D", "Health")) do
     -- row.entity, row.Transform2D, row.Health
 end
+
+-- Entity ids near a point, ordered deterministically (empty if the game
+-- doesn't add SpatialPlugin; only SpatialIndexed entities are found):
+for _, id in ipairs(fulcrum.query_circle(x, y, radius)) do
+    local pos = fulcrum.get(id, "Transform2D")
+end
 ```
 
 Stale entities never error: `get` returns `nil`, `set` warns and ignores, `despawn` is a no-op.
