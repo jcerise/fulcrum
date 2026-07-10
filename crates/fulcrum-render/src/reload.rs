@@ -10,13 +10,25 @@ use crate::text::{Font, GlyphCache};
 use crate::texture::{Texture, decode_rgba, upload_rgba};
 use crate::tilemap::TilemapAsset;
 
-/// Drain the filesystem watcher into `AssetEvent`s (debounced).
+/// Drain the filesystem watcher into `AssetEvent`s (debounced). Creates the watcher on first
+/// run, covering every VFS mount present by then (including mods).
 pub(crate) fn pump_asset_events(
     watcher: Option<Res<AssetWatcher>>,
+    server: Res<AssetServer>,
+    mut commands: bevy_ecs::prelude::Commands,
+    mut started: Local<bool>,
     mut events: EventWriter<AssetEvent>,
     mut debounce: Local<Debounce>,
 ) {
-    let Some(watcher) = watcher else { return };
+    let Some(watcher) = watcher else {
+        if !*started {
+            *started = true;
+            if let Some(watcher) = AssetWatcher::start_all(server.roots()) {
+                commands.insert_resource(watcher);
+            }
+        }
+        return;
+    };
     for path in watcher.drain() {
         if debounce.allow(&path) {
             log::info!("asset changed: {path}");

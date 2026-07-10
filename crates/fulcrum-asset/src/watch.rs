@@ -27,21 +27,18 @@ pub struct AssetWatcher {
     /// Kept alive for its Drop (stops watching).
     _watcher: notify::RecommendedWatcher,
     receiver: Mutex<Receiver<notify::Result<notify::Event>>>,
-    root: PathBuf,
+    roots: Vec<PathBuf>,
 }
 
 impl AssetWatcher {
-    /// Watch `root` recursively. Returns `None` (with a log) if watching fails — hot reload is
-    /// best-effort, never fatal.
+    /// Watch one root recursively (convenience for [`start_all`](Self::start_all)).
     pub fn start(root: impl Into<PathBuf>) -> Option<Self> {
-        let root: PathBuf = root.into();
-        let canonical = match root.canonicalize() {
-            Ok(canonical) => canonical,
-            Err(error) => {
-                log::warn!("hot reload disabled: cannot canonicalize {root:?}: {error}");
-                return None;
-            }
-        };
+        Self::start_all(vec![root.into()])
+    }
+
+    /// Watch every root recursively (the base asset dir plus each mod mount). Returns `None`
+    /// (with a log) if nothing can be watched — hot reload is best-effort, never fatal.
+    pub fn start_all(roots: Vec<PathBuf>) -> Option<Self> {
         let (sender, receiver) = channel();
         let mut watcher = match notify::recommended_watcher(sender) {
             Ok(watcher) => watcher,
@@ -50,15 +47,29 @@ impl AssetWatcher {
                 return None;
             }
         };
-        if let Err(error) = watcher.watch(&canonical, RecursiveMode::Recursive) {
-            log::warn!("hot reload disabled: {error}");
+        let mut canonical_roots = Vec::new();
+        for root in roots {
+            let canonical = match root.canonicalize() {
+                Ok(canonical) => canonical,
+                Err(error) => {
+                    log::warn!("hot reload: cannot canonicalize {root:?}: {error}");
+                    continue;
+                }
+            };
+            if let Err(error) = watcher.watch(&canonical, RecursiveMode::Recursive) {
+                log::warn!("hot reload: cannot watch {canonical:?}: {error}");
+                continue;
+            }
+            log::info!("hot reload watching {canonical:?}");
+            canonical_roots.push(canonical);
+        }
+        if canonical_roots.is_empty() {
             return None;
         }
-        log::info!("hot reload watching {canonical:?}");
         Some(Self {
             _watcher: watcher,
             receiver: Mutex::new(receiver),
-            root: canonical,
+            roots: canonical_roots,
         })
     }
 
@@ -75,16 +86,17 @@ impl AssetWatcher {
                 continue;
             }
             for path in event.paths {
-                let Ok(relative) = path.canonicalize().map(|p| {
-                    p.strip_prefix(&self.root)
-                        .map(|rel| rel.to_string_lossy().replace('\\', "/"))
-                }) else {
+                let Ok(canonical) = path.canonicalize() else {
                     continue;
                 };
-                if let Ok(relative) = relative
-                    && !changed.contains(&relative)
-                {
-                    changed.push(relative);
+                for root in &self.roots {
+                    if let Ok(relative) = canonical.strip_prefix(root) {
+                        let relative = relative.to_string_lossy().replace('\\', "/");
+                        if !changed.contains(&relative) {
+                            changed.push(relative);
+                        }
+                        break;
+                    }
                 }
             }
         }

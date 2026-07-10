@@ -1,0 +1,17 @@
+[package]
+name = "fulcrum-mod"
+description = "Fulcrum modding: mod manifests, the sandboxed Lua runtime, and the mod loader."
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[dependencies]
+fulcrum-core = { workspace = true }
+fulcrum-asset = { workspace = true }
+bevy_ecs = { workspace = true }
+serde = { workspace = true }
+ron = { workspace = true }
+rustc-hash = { workspace = true }
+thiserror = { workspace = true }
+log = { workspace = true }

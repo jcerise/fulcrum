@@ -1273,6 +1273,20 @@ dependencies = [
 ]
 
 [[package]]
+name = "fulcrum-mod"
+version = "0.1.0"
+dependencies = [
+ "bevy_ecs",
+ "fulcrum-asset",
+ "fulcrum-core",
+ "log",
+ "ron",
+ "rustc-hash 2.1.3",
+ "serde",
+ "thiserror 2.0.18",
+]
+
+[[package]]
 name = "fulcrum-render"
 version = "0.1.0"
 dependencies = [

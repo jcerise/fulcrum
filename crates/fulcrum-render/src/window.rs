@@ -89,10 +89,8 @@ impl Plugin for WindowPlugin {
         // reload GPU-side assets in place.
         app.register_event::<fulcrum_asset::AssetEvent>();
         if app.config().hot_reload {
-            let root = app.world().resource::<AssetServer>().root().clone();
-            if let Some(watcher) = fulcrum_asset::AssetWatcher::start(root) {
-                app.world_mut().insert_resource(watcher);
-            }
+            // The watcher itself is created lazily by the pump system, so mods mounted by
+            // plugins added after DefaultPlugins are still watched.
             app.add_systems(
                 fulcrum_core::Update,
                 (

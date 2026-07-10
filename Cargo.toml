@@ -18,6 +18,7 @@ fulcrum-audio = { path = "crates/fulcrum-audio" }
 fulcrum-anim = { path = "crates/fulcrum-anim" }
 fulcrum-scene = { path = "crates/fulcrum-scene" }
 fulcrum-ui = { path = "crates/fulcrum-ui" }
+fulcrum-mod = { path = "crates/fulcrum-mod" }
 
 # external, pinned 2026-07-08
 bevy_ecs = "0.19"
