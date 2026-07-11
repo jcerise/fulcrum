@@ -24,12 +24,19 @@ Three opinions shape everything in it:
 
 ## How this book works
 
-We build one game, from nothing: **Grove** — a little top-down game about collecting gems in a
+**Never built a game before?** This book has an on-ramp written just for you: [From Zero](
+fz01-what-is-a-game.md) builds Snake in six deliberately slow chapters, assuming solid
+programming experience but no game development at all — every concept motivated from first
+principles, the *why* before the *how*. Start there, then come back here; Grove will read at
+twice the speed for it.
+
+For everyone else: we build one game, from nothing: **Grove** — a little top-down game about collecting gems in a
 hedge garden while a fox hunts you. Every chapter adds one engine concept and one piece of the
 game; Part I (chapters 1–10) builds Grove, and Part II (chapters 11–14) layers the power
 features on top — particles, spatial queries and pathfinding, mods, and replays. All the code
-is real: each chapter's complete program lives in `games/grove/examples/` in the Fulcrum
-repository and compiles in CI, so nothing on these pages can silently rot.
+is real: each chapter's complete program lives in the repository (`games/grove/examples/`,
+and `games/snake/` for the From Zero track) and compiles in CI, so nothing on these pages
+can silently rot.
 
 ```text
 cargo run -p grove --example ch01_window   # each chapter, runnable

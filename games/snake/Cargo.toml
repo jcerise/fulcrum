@@ -1,0 +1,13 @@
+[package]
+name = "snake"
+description = "The Fulcrum Book's From Zero game: your first game, explained from first principles."
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[dependencies]
+fulcrum = { workspace = true }
+env_logger = { workspace = true }
+# Manifest-only: lets #[derive(Component)] resolve the `bevy_ecs::` paths it generates.
+bevy_ecs = { workspace = true }
