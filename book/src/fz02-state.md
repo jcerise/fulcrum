@@ -121,6 +121,20 @@ One more habit worth naming, because it was a *choice*: the grid math lives in o
 projection boundary. The simulation will never think in pixels. When you someday want cells
 to be 24 pixels, or the board centered differently, it's one line.
 
-Reshape the `VecDeque` literal and rerun — the view follows without complaint. That obedience
-is the point of the whole chapter. Next we make the state change over time, which means
-finally taking input and the tick seriously.
+## Exercises
+
+1. **Draw your initials.** Replace the body literal with cells spelling a letter or two. Ten
+   seconds of work — but notice what you're doing while you do it: *authoring game state
+   directly*, with no tooling between you and the world. Level editors are this exercise with
+   a nicer pen.
+2. **A second apple.** Add another hard-coded apple in `setup`. Then answer, from the rule of
+   thumb in this chapter: why are apples spawned entities while the snake is a resource? What
+   would it cost to have a third, a tenth, a hundredth apple in each design?
+3. **Gradient body (harder).** Make the body fade toward the tail instead of one flat green —
+   everything you need is the segment `index` and `snake.body.len()`, both already in
+   `project_snake`'s loop. The shipped game does this (`games/snake/src/main.rs`); write yours
+   first, then compare. If your version recomputes colors every frame and that feels
+   wasteful — good instinct, wrong battlefield. Reread the projection section.
+
+The view's obedience to the data is the point of the whole chapter. Next we make the state
+change over time — which means finally taking input and the tick seriously.

@@ -108,6 +108,29 @@ a player must be able to see what's true. (When you want the pretty version, Gro
 chapters cover sprites, sheets, and animation; the architecture you'd hang them on is
 exactly what you have now.)
 
+## Exercises
+
+All presentation-side — the rules don't change, and (chapter 6 will make this concrete) no
+test should notice any of these.
+
+1. **Best-score display.** Track the best score across restarts and show it next to the
+   current one. Store it in its own little resource, updated by a frame system whenever
+   `Score` exceeds it. Notice two things: it survives Enter-to-restart *for free* (restart
+   resets sim state, and this isn't sim state), and you've just drawn a meaningful line —
+   is a high score gameplay or presentation? There's a real argument for each; take one side
+   and be able to say why.
+2. **Eyes.** Give the head two tiny white squares, offset perpendicular to `snake.dir`. The
+   view is allowed to read anything in the world — direction included — and twenty minutes of
+   fiddling with offsets here teaches more about "readability is the floor" than any
+   paragraph. (Where do the eyes go? More entities to reconcile, or draw them relative to the
+   head's view each frame? Both work; feel the trade.)
+3. **Death flash (harder).** When `RunEnded` fires, tint the whole floor red and fade back
+   over half a second. You'll need three small things: a marker component on the floor tiles
+   (they're spawned bare today), a frame system reading `RunEnded`, and somewhere to keep the
+   fade countdown — try `Local<f32>`, frame-side state for frame-side effects, ticked down by
+   `time.frame_delta`. That's the whole presentation toolkit in one effect: markers,
+   events, local state, the render clock.
+
 ## What you have
 
 A complete game, and — more valuable — a complete *shape* for every game after it:

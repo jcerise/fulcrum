@@ -109,6 +109,27 @@ other test's verdict means anything. Engines in this family treat that property 
 infrastructure: Fulcrum's CI plays scripted runs of every game in the repository, twice,
 release mode, every commit, and fails the build on a single divergent bit.
 
+## Exercises
+
+The best ones in the book, because this chapter's skill compounds: every test you add makes
+every future change cheaper.
+
+1. **Test the turn buffer.** Chapter 3's proudest code has no test. Write one: within a
+   single 8-tick step window, tap up then left; assert the snake's path shows both turns,
+   one step apart. You'll need `tap`-like input plumbing with your own timing — build a small
+   helper; test helpers are load-bearing code here, same as anywhere.
+2. **Test the tail corner case.** Chapter 4's exercise had you *reach* the
+   tail-cell situation by playing; now script it. Two assertions: entering the tail's cell
+   while not growing is survival, entering it just after eating is death. If you can steer a
+   test snake into a tight spiral on demand, you have fully internalized this track's input
+   and time model — this is the hardest exercise here, and the most worth doing.
+3. **Mutation testing, by hand (harder).** Comment out the reversal check in `steer` and run
+   the suite. It passes. That should bother you — a rule with no test isn't guaranteed, it's
+   lucky (the bot never presses a reversing key, so nothing notices). Write the test that
+   fails: press the exact reverse of the current direction, assert the snake does *not* die
+   into its own neck. Then restore the check, and carry the habit with you: when you're
+   unsure a test suite earns its keep, break the code on purpose and see who complains.
+
 ## Where you are, and where the rest of the book goes
 
 Count what you actually learned by shipping this toy: the loop and the two clocks; state as

@@ -131,6 +131,28 @@ actually the seam the next chapter is built on. Sound, score popups, screen shak
 will attach to these two lines without the simulation changing at all. The sim speaks;
 whether anything is listening is not its business.
 
+## Exercises
+
+From here on you're editing the real crate, `games/snake/src/game.rs` — the examples and the
+shipped game both run whatever you make the rules say.
+
+1. **Golden apples.** Give each spawned apple a 1-in-5 chance (`rng.chance(0.2)`) of being
+   golden: worth 3 growth instead of 2. You'll want a marker component on the entity — and
+   note that the view doesn't know about it yet, so your golden apple will look ordinary
+   until you also touch `dress_apples`. That mild annoyance *is* the sim/presentation split,
+   felt from the inside; chapter 5 gives it words.
+2. **Break the tail rule on purpose.** Delete `&& snake.grow == 0` from the self-bite check,
+   then construct the play situation where the difference shows (you'll need to have just
+   eaten, with your head one step behind your tail — a tight spiral). This is practice for a
+   permanent skill: verifying a corner case by *reaching* it, not by reading the code and
+   nodding.
+3. **Wrap mode (harder).** Add a `WrapMode(bool)` resource; when true, edges wrap (chapter
+   3's modulo) instead of killing. Two things to get right beyond the arithmetic: the
+   self-bite rule must still apply after wrapping, and you should be able to say why the win
+   condition doesn't care either way. Then ask the chapter-4 question of your own feature:
+   what's *its* corner case? (Hint: a wrapped head entering the column the tail is about to
+   vacate.)
+
 The game is now complete — playable, losable, restartable, honest. It's also mute, colorless
 about its feelings, and doesn't show the score. Everything missing is *presentation*, and
 presentation is a different kind of code with different rules. That split is next.

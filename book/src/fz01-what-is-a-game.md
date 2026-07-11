@@ -137,5 +137,23 @@ same game*. Fulcrum's particular opinions (fixed 60 Hz ticks, ECS, determinism) 
 parts you *do* write stay small and testable. You'll feel each opinion earn its keep as Snake
 grows.
 
+## Exercises
+
+Every chapter in this track ends with a few of these. They modify the chapter's example
+(`games/snake/examples/fz01_loop.rs` here) — the verification step is always the same:
+run it and watch. No solutions are provided, on purpose; being briefly stuck is the lesson.
+
+1. **More squares, same system.** In `setup`, spawn two more `Patroller` squares at different
+   `y` positions (and, if you like, different colors). Don't touch `patrol` — then explain to
+   yourself why you didn't have to. That query was never about *the* square.
+2. **Change the rhythm.** Make the patrol turn around every second instead of every two. One
+   number changes — but predict *which occurrences of it* before you edit, and check your
+   understanding of `time.tick % 240 < 120` against what happens.
+3. **Accelerate (harder).** Make the square's speed grow over time — say, 40 units/second
+   plus 10 more for every elapsed second — while keeping the two-second turnaround. Everything
+   you need is already in the system: `time.tick` for "how long has it been," `fixed_delta`
+   for "how big is this step." If your square teleports or crawls, you've mixed the two up —
+   which is exactly the mistake this chapter exists to inoculate against.
+
 Next: the square becomes a snake — which turns out to mean almost nothing on screen and
 everything in how we think about *state*.

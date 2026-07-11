@@ -138,6 +138,22 @@ Finally, order. Two systems now write `Snake`, and it matters which goes first:
 `chain()` says: in this order, every tick. Intent is read, then the world advances. Being
 explicit costs six characters; being implicit costs an afternoon someday.
 
+## Exercises
+
+1. **Sprint.** While Space is *held*, make the snake step every 4 ticks instead of 8. This is
+   deliberately a `pressed` (level) problem right after a chapter full of `just_pressed`
+   (edge) reasoning — if you reach for the wrong one, you'll feel it immediately. Decide
+   whether sprint belongs in `steer` or `step`, and defend the choice.
+2. **Feel the buffer.** Change the queue cap from 2 to 0 (turns overwrite `snake.dir`
+   directly) and play for a minute — try a quick up-then-left. Then set the cap to 5 and whip
+   the keys around. Name what's wrong with each before restoring 2: one loses intent, the
+   other honors *stale* intent. Game feel lives in exactly this kind of number.
+3. **Order matters (harder).** Swap the chain to `(step, steer)` and describe precisely what
+   changed — not "it feels worse": trace a keypress through the tick. (Answer shape: a turn
+   pressed on the same tick as a movement step now applies one step later.) Then consider:
+   why didn't the compiler, or the engine, catch this? What *could* catch it? Hold that
+   thought until chapter 6.
+
 The snake moves, turns crisply, and wraps politely off the edges. It's a toy, not a game —
 nothing can go wrong, and nothing is at stake. Next chapter we add the apple, the growth,
 and the dying. That's where the game lives.
