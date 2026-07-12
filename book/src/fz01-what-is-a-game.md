@@ -244,16 +244,58 @@ Read `patrol` again with that in mind:
 - `100.0 * time.fixed_delta` means **100 units per second**, expressed honestly: a
   per-second speed times the fixed size of one tick. Never move things by bare constants per
   tick; per-second units multiplied by `fixed_delta` is the idiom.
-- `time.tick % 240 < 120` is the simulation consulting *its own* heartbeat: 240 ticks is
-  exactly four seconds, on every machine, every run. When game logic needs to decide
-  something over time, it counts ticks — never the wall clock. A game that reads the wall
-  clock inside its logic has already given up reproducibility, and reproducibility is the
-  thesis of this whole track: it's what will let us test Snake in chapter 6 like the pure
-  function it is.
 - One free gift to notice: the square glides smoothly even though the simulation nudges it in
   60 discrete steps a second. When the render clock falls between two ticks, the engine draws
   positions *interpolated* between them. You get that precisely because the two clocks are
   separate.
+
+### Reading `time.tick % 240 < 120`
+
+The turnaround line deserves its own dissection, because its numbers look arbitrary until
+you see that there's really only one decision inside them.
+
+Start with `time.tick`: it's just a counter. 0 on the first tick, then 1, 2, 3… forever,
+incrementing 60 times a second and never resetting — "time since startup, measured in 60ths
+of a second." After one second it's 60; after a minute, 3600.
+
+`% 240` folds that ever-growing counter into a repeating cycle. `tick % 240` can only ever
+be 0 through 239, and as `tick` climbs it sweeps through that range and wraps: 0, 1, … 239,
+0, 1, … Read it as "where am I within the current 240-tick (four-second) cycle?" This is
+*the* standard trick for making anything periodic out of a clock that only counts up.
+
+`< 120` splits the cycle into two halves and asks "am I in the first one?"
+
+```text
+tick % 240:   0 ............ 119 | 120 ............ 239 |  (wraps, repeats)
+< 120:        true  (first half) | false (second half)  |
+direction:    ──► right, 2 sec   | ◄── left, 2 sec      |
+```
+
+So the two literals aren't independent — the line contains exactly one decision: **how long
+should one leg of the patrol last?** The answer is 120 ticks (2 seconds × 60 ticks/sec), and
+everything else is derived from it: the full cycle is one leg right plus one leg left,
+`2 × 120 = 240`, and the split point is one leg, `120`. Written the way you'd write it in
+production code, the derivation is visible and there are no magic numbers left:
+
+```rust,ignore
+const TICKS_PER_SECOND: u64 = 60;
+const LEG: u64 = 2 * TICKS_PER_SECOND; // how long to travel one direction
+
+let heading_right = time.tick % (2 * LEG) < LEG;
+```
+
+Two more things the line teaches. First, it picks a **velocity**, not a position: when the
+boolean flips, the square doesn't jump anywhere — the next line just starts accumulating
+`fixed_delta`-sized nudges in the other direction from wherever it is. The position you see
+is the running sum of every nudge so far. Second, the decision consults *simulation* time —
+counting ticks, never the wall clock. 240 ticks is exactly four seconds on every machine,
+every run; a game that reads the wall clock inside its logic has already given up
+reproducibility, and reproducibility is the thesis of this whole track — it's what will let
+us test Snake in chapter 6 like the pure function it is.
+
+Keep the general recipe; you'll use it constantly: `period = seconds × 60`; `tick % period`
+is your position in the cycle; compare against fractions of `period` to carve the cycle into
+phases. Chapter 3 packages the same idea as a countdown timer.
 
 ## Checkpoint
 
@@ -299,9 +341,12 @@ lesson.
 1. **More squares, same system.** In `setup`, spawn two more `Patroller` squares at different
    `y` positions (and, if you like, different colors). Don't touch `patrol` — then explain to
    yourself why you didn't have to. That query was never about *the* square.
-2. **Change the rhythm.** Make the patrol turn around every second instead of every two. One
-   number changes — but predict *which occurrences of it* before you edit, and check your
-   understanding of `time.tick % 240 < 120` against what happens.
+2. **Change the rhythm.** Make the patrol turn around every second instead of every two.
+   Conceptually one number changes — the leg length — but it appears in the code as *two*
+   literals. Before you edit, predict what each wrong single edit would do: what does
+   `% 120 < 120` make the square do? What about `% 240 < 60`? Then make the right change,
+   and check at least one of your predictions by running it — a lopsided patrol is worth
+   seeing once.
 3. **Accelerate (harder).** Make the square's speed grow over time — say, 40 units/second
    plus 10 more for every elapsed second — while keeping the two-second turnaround. Everything
    you need is already in the system: `time.tick` for "how long has it been," `fixed_delta`
