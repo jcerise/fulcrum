@@ -1,18 +1,26 @@
 # What a Game Actually Is
 
 This track assumes you can program — and assumes nothing else. If you've shipped web services
-or CLIs but never a game, the next six chapters are yours. We'll build Snake, completely: not
-because Snake is impressive, but because it's the smallest program that contains every idea
-that makes games *different* from the software you already write. We'll go slowly and explain
-why everything is the way it is. (If you've made games before, skip ahead to
-[Grove](ch01-window.md) — it covers this material at four times the speed.)
+or CLIs but never a game, the next six chapters are yours. Together we'll build **Snake**,
+completely, and you'll type every line: this is a code-along, not a tour. Snake isn't
+impressive, but it's the smallest program that contains every idea that makes games
+*different* from the software you already write, and by the end you'll have a playable,
+polished, *tested* game in a crate you built from `cargo new`.
 
-## The program you're used to writing is asleep by default
+(If you've made games before, skip ahead to [Grove](ch01-window.md) — it covers this
+material at four times the speed.)
+
+A finished copy of everything we build lives in the repository at `games/snake`, and each
+chapter ends with a **checkpoint** you can run and diff against. Use it when you're stuck;
+type your own the rest of the time. Typing is the point — the questions that occur to you
+mid-keystroke ("wait, why a *resource*?") are the actual curriculum.
+
+## The one idea to hold onto
 
 Nearly every program you've written shares one deep assumption: *nothing happens unless
-something happens*. A web server sleeps until a request arrives. A CLI runs, prints, exits. A
-GUI app idles until a click. The operating system parks your process, and your mental model —
-handlers, requests, callbacks — is built around reacting.
+something happens*. A web server sleeps until a request arrives. A CLI runs, prints, exits.
+The OS parks your process, and your mental model — handlers, requests, callbacks — is built
+around reacting.
 
 A game breaks that assumption in the first second. Watch any game with your hands off the
 controls: enemies patrol, water shimmers, the clock ticks down. **A game is a simulation that
@@ -27,55 +35,101 @@ loop {
 }
 ```
 
-Every game ever shipped is a decoration of those three lines. Each trip through the loop draws
-one **frame** — one complete picture. Do that 60 times a second and the pictures fuse into
-motion, exactly like film. That's all "60 FPS" means: the loop completed 60 times.
+Every game ever shipped is a decoration of those three lines. Each trip through the loop
+draws one **frame**; do that 60 times a second and the pictures fuse into motion. That's all
+"60 FPS" means. Keep the loop in your head — everything Fulcrum asks of you in this chapter
+is a slot in it.
 
-## The two clocks
+## Step 0 — create your project
 
-Here's the first genuinely non-obvious design decision, and it's one Fulcrum makes for you.
-How big is "one small slice of time"?
-
-The obvious answer: however long the last frame took. Fast machine, small slices; slow
-machine, big slices; multiply all your speeds by the measured delta and everything moves at
-the same real-world rate. Most tutorials teach this. It's also a trap that has shipped a
-thousand bugs: physics that explodes when a laggy frame produces one huge step (the bullet is
-*past* the wall before anyone checks), gameplay that differs subtly between a 60 Hz office
-monitor and a 144 Hz gaming one, and — worst — behavior that can never be reproduced twice,
-because the sequence of deltas is different on every run. If you've fought a bug that only
-happens in production under load, you know this genre of pain.
-
-The engineering fix is the same one you'd reach for in any distributed system: **make time
-discrete.** Fulcrum runs two clocks:
-
-- The **simulation clock** ticks at exactly 60 Hz. Each **tick** advances the world by
-  precisely 1/60th of a second — never more, never less. Game logic lives here. If the
-  machine hiccups, the engine runs *more ticks* to catch up; each tick is still the same size.
-- The **render clock** is the messy real-world one: draw a frame whenever the display wants
-  one. Rendering *reads* the simulation and never writes it.
-
-The payoff is enormous and mostly invisible: the same inputs produce the same game, every run,
-on every machine — which is what will let us *test* Snake headlessly in the final chapter, the
-way you'd test any other pure function. Hold that thought; it's the thesis of this whole
-track.
-
-## Six lines, explained honestly
-
-Enough theory. Run this:
+Work happens inside your clone of the Fulcrum repository. The workspace's `Cargo.toml` lists
+`games/*` as members, so a new crate in `games/` joins the build automatically — no manifest
+surgery. From the repository root:
 
 ```text
-cargo run -p snake --example fz01_loop
+cargo new games/my-snake
 ```
 
-A green square patrols left and right, untouched. Here is the whole program, and — because
-this track promised the *why* of everything — an honest account of each piece:
+Replace the generated `games/my-snake/Cargo.toml` with:
+
+```toml
+[package]
+name = "my-snake"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+fulcrum = { workspace = true }
+# Manifest-only: Fulcrum's #[derive(Component)] macros generate paths that
+# start with `bevy_ecs::`, so the crate name must be resolvable here.
+bevy_ecs = { workspace = true }
+```
+
+You'll never write `bevy_ecs::` yourself — everything comes through `fulcrum::prelude` — but
+the derive macros need that second line to compile. It's the one piece of ceremony in the
+whole setup.
+
+Finally, the game needs somewhere to keep images and sounds, and one image to start with: an
+8×8 white square. Every rectangle in Snake will be a tinted, stretched copy of it — no art
+pipeline between you and shipping:
+
+```text
+mkdir games/my-snake/assets
+cp games/snake/assets/white.png games/my-snake/assets/
+```
+
+## Step 1 — a window
+
+Replace `games/my-snake/src/main.rs` with the smallest possible Fulcrum program:
 
 ```rust,ignore
 use fulcrum::prelude::*;
 
-#[derive(Component)]
-struct Patroller;
+fn main() {
+    Fulcrum::new("My Snake")
+        .insert_resource(AssetServer::new(concat!(env!("CARGO_MANIFEST_DIR"), "/assets")))
+        .with_plugin(DefaultPlugins)
+        .run();
+}
+```
 
+Run it:
+
+```text
+cargo run -p my-snake
+```
+
+A dark, empty window, holding steady. Underwhelming — and already running the loop from the
+top of this chapter, 60 times a second, doing nothing each time. Close it and look at the
+four calls you just made, because they're the frame everything else hangs on:
+
+> **Toolbox — `Fulcrum::new(title)`:** creates the app: an empty **world** (where all game
+> state will live), an empty schedule of functions to run, and a window title. Nothing
+> happens until `.run()`.
+>
+> **Toolbox — `.insert_resource(AssetServer::new(...))`:** a **resource** is a global
+> singleton stored in the world, addressed by type. This one tells the engine where your
+> `assets/` directory is. `concat!(env!("CARGO_MANIFEST_DIR"), "/assets")` resolves it at
+> compile time relative to *your crate*, so the game runs from any working directory.
+>
+> **Toolbox — `.with_plugin(DefaultPlugins)`:** a **plugin** is a bundle of engine setup.
+> `DefaultPlugins` installs everything a windowed game needs: the window itself, the GPU
+> handshake, sprite rendering, input collection, audio, text. In chapter 6 we'll build the
+> game *without* this line — that's what will make it testable.
+>
+> **Toolbox — `.run()`:** hands control to the engine, forever. This offends the instinct
+> that *your* code should own `main`, but it's the same inversion as a web framework owning
+> the accept loop while you write handlers: the loop is where all the platform misery lives
+> (window events, GPU frame pacing, catching up missed ticks), and it's identical in every
+> game. You write the parts that differ.
+
+## Step 2 — something on the screen
+
+Games put things on screen by **spawning entities** — we'll define entities properly in the
+next chapter; for today, read "spawn" as "create a thing the renderer can see." Add a setup
+function above `main`, and register it:
+
+```rust,ignore
 fn setup(mut commands: Commands, mut assets: AssetLoader) {
     let square = assets.load("white.png");
     commands.spawn((
@@ -83,10 +137,55 @@ fn setup(mut commands: Commands, mut assets: AssetLoader) {
             .with_color(Color::rgb(0.4, 0.9, 0.5))
             .with_size(Vec2::splat(24.0)),
         Transform2D::from_xy(-100.0, 0.0),
-        Patroller,
     ));
 }
+```
 
+```rust,ignore
+        .with_plugin(DefaultPlugins)
+        .add_startup(setup)      // <-- new
+        .run();
+```
+
+Run it again: a green square, just left of center. Three new tools:
+
+> **Toolbox — `add_startup(fn)`:** registers a function to run **once**, before the first
+> trip through the loop — the moral equivalent of your service's init code. The parameters
+> of the function are its dependency injection: you declare what you need from the world
+> (`Commands`, `AssetLoader`, later queries and resources) and the engine hands them to you.
+> Every function you register works this way.
+>
+> **Toolbox — `Commands` + `spawn`:** `commands.spawn((A, B, C))` creates an entity carrying
+> those pieces of data. Here: a `Sprite` (what to draw — which texture, what tint, what
+> size) and a `Transform2D` (where — position, rotation, scale). The renderer draws every
+> entity that has both. That's not special-cased for squares; it's how *everything* gets
+> drawn, in Snake and in every Fulcrum game.
+>
+> **Toolbox — `AssetLoader`:** loads files from the `assets/` directory you registered in
+> step 1 and returns a `Handle` — a cheap, copyable ticket for the texture. Loading happens
+> once; handles get passed around.
+
+## Step 3 — motion, and the two clocks
+
+Now the part that makes it a *game* program and not a drawing program. Add a marker so we can
+find our square, put it on the spawn, and write a function that moves it:
+
+```rust,ignore
+#[derive(Component)]
+struct Patroller;
+```
+
+```rust,ignore
+    commands.spawn((
+        Sprite::new(square)
+            .with_color(Color::rgb(0.4, 0.9, 0.5))
+            .with_size(Vec2::splat(24.0)),
+        Transform2D::from_xy(-100.0, 0.0),
+        Patroller,               // <-- new
+    ));
+```
+
+```rust,ignore
 fn patrol(mut squares: Query<&mut Transform2D, With<Patroller>>, time: Res<Time>) {
     for mut transform in &mut squares {
         let heading_right = time.tick % 240 < 120;
@@ -94,54 +193,108 @@ fn patrol(mut squares: Query<&mut Transform2D, With<Patroller>>, time: Res<Time>
         transform.translation.x += direction * 100.0 * time.fixed_delta;
     }
 }
-
-fn main() {
-    Fulcrum::new("fz01: a window, alive")
-        .insert_resource(AssetServer::new(concat!(env!("CARGO_MANIFEST_DIR"), "/assets")))
-        .with_plugin(DefaultPlugins)
-        .add_startup(setup)
-        .add_system(patrol)
-        .run();
-}
 ```
 
-- **`main` builds an app and surrenders to it.** `.run()` never returns — the engine owns the
-  loop. This offends the instinct that *your* code should be in charge, but it's the same
-  inversion as a web framework owning the accept loop while you write handlers: the loop is
-  where all the platform misery lives (window events, GPU frame pacing, catching up missed
-  ticks), and it's identical in every game. You write the parts that differ.
-- **`add_startup(setup)`** registers a function to run once, before the first tick — the
-  moral equivalent of your service's init code.
-- **`add_system(patrol)`** registers a function on the simulation clock: called every tick,
-  60 times a second, forever. This is the "advance the world" slot of the loop, and it's
-  where Snake will actually live.
-- **`patrol` moves at `100.0 * time.fixed_delta`** — 100 units per second, times the fixed
-  size of one tick. Speeds in per-second units, multiplied by the tick length, stay honest
-  no matter what the render clock is doing.
-- **`time.tick`** is the simulation counting its own heartbeats: 120 ticks is exactly two
-  seconds, on every machine, every run. When the square needs to "decide" something over
-  time, it consults *simulation* time — never the wall clock. (A game that reads the wall
-  clock inside its logic has already given up reproducibility. More on that in chapter 4.)
-- The `Component`, `spawn`, `Query` machinery is the next chapter's whole subject; squint
-  past it for now. One detail worth noticing today: the square glides smoothly even though
-  the simulation moves it in 60 discrete nudges a second — when the render clock falls
-  between two ticks, the engine draws positions *interpolated* between them. You get that
-  for free precisely because the two clocks are separate.
+```rust,ignore
+        .add_startup(setup)
+        .add_system(patrol)      // <-- new
+        .run();
+```
 
-## What "engine" means, one paragraph
+Run it. The square patrols: right for two seconds, left for two seconds, forever, hands off
+the keyboard. You have a simulation.
 
-Everything you just didn't write — the window, the GPU handshake, the loop, tick catch-up,
-interpolation, input plumbing, image decoding — is the engine. `DefaultPlugins` installs all
-of it. An engine is not a framework for games so much as *the parts of every game that are the
-same game*. Fulcrum's particular opinions (fixed 60 Hz ticks, ECS, determinism) exist so the
-parts you *do* write stay small and testable. You'll feel each opinion earn its keep as Snake
-grows.
+> **Toolbox — `add_system(fn)`:** registers a function on the **simulation clock**: called
+> every tick, 60 times a second, for the life of the program. This is the "advance the
+> world" slot of the loop, and it's where all of Snake's actual game logic will live.
+>
+> **Toolbox — `Query<&mut Transform2D, With<Patroller>>`:** "give me the transform,
+> writable, of every entity that has both a `Transform2D` and a `Patroller`." Note what the
+> function *doesn't* have: a reference to the square we spawned. Systems don't hold objects;
+> they ask the world for data by shape, every tick. Chapter 2 is entirely about why.
+>
+> **Toolbox — `Res<Time>`:** read-only access to the `Time` resource. Two fields matter
+> today: `time.tick`, the number of simulation ticks since startup, and `time.fixed_delta`,
+> the duration of one tick in seconds.
+
+The two `time` fields deserve more than a bullet, because they encode the first genuinely
+non-obvious design decision in game programming — one Fulcrum makes *for* you. The question:
+how big is "one small slice of time" in the loop?
+
+The obvious answer is "however long the last frame took" — measure the delta, multiply your
+speeds by it, and everything moves at the same real-world rate on any machine. Most tutorials
+teach this. It's also a trap that has shipped a thousand bugs: physics that explodes when a
+laggy frame produces one huge step, gameplay that differs subtly between a 60 Hz office
+monitor and a 144 Hz gaming one, and — worst — behavior that can never be reproduced twice,
+because the sequence of deltas is different on every run. If you've fought a bug that only
+happens in production under load, you know this genre of pain.
+
+The engineering fix is the same one you'd reach for in a distributed system: **make time
+discrete.** Fulcrum runs two clocks:
+
+- The **simulation clock** ticks at exactly 60 Hz. Each **tick** advances the world by
+  precisely 1/60th of a second — never more, never less. If the machine hiccups, the engine
+  runs *more ticks* to catch up; each tick is still the same size. `add_system` functions
+  live here.
+- The **render clock** is the messy real-world one: draw a frame whenever the display wants
+  one. Rendering *reads* the simulation and never writes it.
+
+Read `patrol` again with that in mind:
+
+- `100.0 * time.fixed_delta` means **100 units per second**, expressed honestly: a
+  per-second speed times the fixed size of one tick. Never move things by bare constants per
+  tick; per-second units multiplied by `fixed_delta` is the idiom.
+- `time.tick % 240 < 120` is the simulation consulting *its own* heartbeat: 240 ticks is
+  exactly four seconds, on every machine, every run. When game logic needs to decide
+  something over time, it counts ticks — never the wall clock. A game that reads the wall
+  clock inside its logic has already given up reproducibility, and reproducibility is the
+  thesis of this whole track: it's what will let us test Snake in chapter 6 like the pure
+  function it is.
+- One free gift to notice: the square glides smoothly even though the simulation nudges it in
+  60 discrete steps a second. When the render clock falls between two ticks, the engine draws
+  positions *interpolated* between them. You get that precisely because the two clocks are
+  separate.
+
+## Checkpoint
+
+Your `main.rs` should now match the repository's reference for this chapter,
+`games/snake/examples/fz01_loop.rs`. Run the reference and compare:
+
+```text
+cargo run -p snake --example fz01_loop
+```
+
+Same patrolling square? You're done. (The reference names its window differently and orders
+items differently — diff for *meaning*, not bytes.)
+
+## What you didn't write
+
+Everything you just didn't type — the window, the GPU handshake, the loop, tick catch-up,
+interpolation, input plumbing, image decoding — is the engine, and `DefaultPlugins` installed
+all of it. An engine is not a framework for games so much as *the parts of every game that
+are the same game*. Fulcrum's particular opinions (fixed 60 Hz ticks, state in one world,
+determinism) exist so the parts you *do* write stay small and testable. You'll feel each
+opinion earn its keep as Snake grows.
+
+Your Fulcrum vocabulary after one chapter:
+
+| Tool | What it's for |
+| --- | --- |
+| `Fulcrum::new(title)` / `.run()` | build the app; surrender to the loop |
+| `DefaultPlugins` | window, renderer, input, audio — the whole engine |
+| `insert_resource` / `Res<T>` | global singletons in the world, by type |
+| `add_startup(fn)` | run once, before the first tick |
+| `add_system(fn)` | run every simulation tick (60 Hz) |
+| `Commands::spawn` | create an entity from pieces of data |
+| `Sprite` + `Transform2D` | what to draw + where; the renderer draws the pair |
+| `Query<...>` | ask the world for data by shape |
+| `time.tick` / `time.fixed_delta` | simulation time: count of ticks / size of one |
 
 ## Exercises
 
-Every chapter in this track ends with a few of these. They modify the chapter's example
-(`games/snake/examples/fz01_loop.rs` here) — the verification step is always the same:
-run it and watch. No solutions are provided, on purpose; being briefly stuck is the lesson.
+Every chapter ends with a few of these, done in *your* crate. The verification step is always
+the same: run it and watch. No solutions are provided, on purpose; being briefly stuck is the
+lesson.
 
 1. **More squares, same system.** In `setup`, spawn two more `Patroller` squares at different
    `y` positions (and, if you like, different colors). Don't touch `patrol` — then explain to

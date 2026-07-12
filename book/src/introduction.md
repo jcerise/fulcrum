@@ -25,10 +25,11 @@ Three opinions shape everything in it:
 ## How this book works
 
 **Never built a game before?** This book has an on-ramp written just for you: [From Zero](
-fz01-what-is-a-game.md) builds Snake in six deliberately slow chapters, assuming solid
-programming experience but no game development at all — every concept motivated from first
-principles, the *why* before the *how*. Start there, then come back here; Grove will read at
-twice the speed for it.
+fz01-what-is-a-game.md) is a code-along tutorial that builds Snake in six deliberately slow
+chapters — you create your own crate and type every line — assuming solid programming
+experience but no game development at all. Every concept and every engine tool is motivated
+from first principles, the *why* before the *how*. Start there, then come back here; Grove
+will read at twice the speed for it.
 
 For everyone else: we build one game, from nothing: **Grove** — a little top-down game about collecting gems in a
 hedge garden while a fox hunts you. Every chapter adds one engine concept and one piece of the
