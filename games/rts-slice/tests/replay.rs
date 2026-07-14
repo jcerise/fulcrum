@@ -38,7 +38,7 @@ fn order_army(world: &mut World, x: f32, y: f32) {
 }
 
 #[test]
-fn recorded_battle_plays_back_hash_clean() {
+fn replay_recorded_battle_plays_back_hash_clean() {
     let dir = std::env::temp_dir().join("rts-slice-replay");
     let _ = std::fs::remove_dir_all(&dir);
     std::fs::create_dir_all(&dir).unwrap();

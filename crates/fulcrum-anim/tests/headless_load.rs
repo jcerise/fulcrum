@@ -80,7 +80,7 @@ fn real_assets_drive_machines_without_a_gpu() {
 }
 
 #[test]
-fn headless_runs_are_identical() {
+fn determinism_headless_runs_are_identical() {
     let run = || {
         let (mut app, entity) = build();
         let mut trace = Vec::new();

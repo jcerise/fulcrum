@@ -55,7 +55,7 @@ fn run_and_fingerprint(seed: u64, ticks: u32) -> Vec<(u32, u32, u32)> {
 }
 
 #[test]
-fn same_seed_same_state_after_1000_ticks() {
+fn determinism_same_seed_same_state_after_1000_ticks() {
     let a = run_and_fingerprint(42, 1000);
     let b = run_and_fingerprint(42, 1000);
     assert!(!a.is_empty(), "the sim actually spawned entities");
@@ -63,14 +63,14 @@ fn same_seed_same_state_after_1000_ticks() {
 }
 
 #[test]
-fn different_seeds_diverge() {
+fn determinism_different_seeds_diverge() {
     let a = run_and_fingerprint(1, 200);
     let b = run_and_fingerprint(2, 200);
     assert_ne!(a, b, "different seeds should not coincide");
 }
 
 #[test]
-fn forked_streams_are_independent_and_deterministic() {
+fn determinism_forked_streams_are_independent() {
     let mut parent_a = SimRng::seeded(7);
     let mut fork_a = parent_a.fork();
     let mut parent_b = SimRng::seeded(7);

@@ -47,7 +47,7 @@ fn build_app(record: bool) -> Fulcrum {
 }
 
 #[test]
-fn record_1000_ticks_then_playback_matches_every_hash() {
+fn replay_record_1000_ticks_then_playback_matches_every_hash() {
     let dir = std::env::temp_dir().join("fulcrum-dungeon-replay");
     let _ = std::fs::remove_dir_all(&dir);
     std::fs::create_dir_all(&dir).unwrap();

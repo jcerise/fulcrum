@@ -58,7 +58,7 @@ fn run(seed: u64, ticks: u32) -> (u32, u32, u32) {
 }
 
 #[test]
-fn deterministic_and_playable() {
+fn determinism_scripted_run_is_identical_and_playable() {
     let a = run(DEFAULT_SEED, 600);
     let b = run(DEFAULT_SEED, 600);
     assert_eq!(a, b, "same seed + same script must reproduce exactly");

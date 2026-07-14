@@ -158,7 +158,7 @@ fn the_dummy_fights_back_at_point_blank() {
 }
 
 #[test]
-fn same_seed_same_dojo() {
+fn determinism_same_seed_same_dojo() {
     let fingerprint = |seed: u64| {
         let mut app = build(seed);
         app.run_startup();

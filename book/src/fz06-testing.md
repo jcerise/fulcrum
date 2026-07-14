@@ -206,7 +206,7 @@ The last test asserts determinism itself:
 
 ```rust,ignore
 #[test]
-fn same_seed_same_game() {
+fn determinism_same_seed_same_game() {
     // Determinism, the property every other test stands on: identical seed and input
     // stream => bit-identical outcome. Exact equality — no epsilons.
     let fingerprint = |seed: u64| {

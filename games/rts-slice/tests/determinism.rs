@@ -92,7 +92,7 @@ fn run_battle(seed: u64, ticks: u32) -> (Vec<UnitPrint>, f64, usize) {
 }
 
 #[test]
-fn scripted_battle_2000_ticks_is_deterministic() {
+fn determinism_scripted_battle_2000_ticks() {
     let (a, tick_ms, peak) = run_battle(DEFAULT_SEED, 2000);
     let (b, _, _) = run_battle(DEFAULT_SEED, 2000);
     assert_eq!(a, b, "same seed + same commands must reproduce exactly");

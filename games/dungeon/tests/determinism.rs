@@ -94,7 +94,7 @@ fn run(seed: u64, ticks: u32) -> Outcome {
 }
 
 #[test]
-fn same_seed_scripted_600_ticks_identical() {
+fn determinism_same_seed_scripted_600_ticks_identical() {
     let a = run(DEFAULT_SEED, 600);
     let b = run(DEFAULT_SEED, 600);
     assert_eq!(a, b, "same seed + same script must reproduce exactly");
