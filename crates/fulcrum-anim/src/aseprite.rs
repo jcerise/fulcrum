@@ -121,7 +121,9 @@ pub struct AsepriteLoader<'w> {
     textures: ResMut<'w, Assets<Texture>>,
     sheets: ResMut<'w, Assets<SpriteSheet>>,
     clips: ResMut<'w, Assets<AnimationClip>>,
-    gpu: Res<'w, GpuContext>,
+    /// Absent in headless apps (tests, servers): regions and clip timing still import —
+    /// they're simulation data — there are just no pixels to upload.
+    gpu: Option<Res<'w, GpuContext>>,
     config: Res<'w, FulcrumConfig>,
 }
 
@@ -147,12 +149,15 @@ impl AsepriteLoader<'_> {
             .parent()
             .unwrap_or_else(|| std::path::Path::new(""));
         let image_path = dir.join(&file.meta.image);
-        let texture = load_texture(
-            &self.server,
-            &mut self.textures,
-            &self.gpu,
-            &image_path.to_string_lossy(),
-        );
+        let texture = match &self.gpu {
+            Some(gpu) => load_texture(
+                &self.server,
+                &mut self.textures,
+                gpu,
+                &image_path.to_string_lossy(),
+            ),
+            None => Handle::INVALID,
+        };
 
         let mut sheet = SpriteSheet {
             texture,

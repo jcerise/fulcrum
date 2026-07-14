@@ -1,0 +1,15 @@
+{
+  "frames": [
+    { "filename": "hero idle 0", "frame": {"x":0,"y":0,"w":16,"h":16}, "duration": 100 },
+    { "filename": "hero idle 1", "frame": {"x":16,"y":0,"w":16,"h":16}, "duration": 100 },
+    { "filename": "hero swing 0", "frame": {"x":32,"y":0,"w":16,"h":16}, "duration": 50 },
+    { "filename": "hero swing 1", "frame": {"x":48,"y":0,"w":16,"h":16}, "duration": 50 }
+  ],
+  "meta": {
+    "image": "hero.png",
+    "frameTags": [
+      { "name": "idle", "from": 0, "to": 1, "direction": "forward" },
+      { "name": "swing", "from": 2, "to": 3, "direction": "forward", "repeat": "1" }
+    ]
+  }
+}

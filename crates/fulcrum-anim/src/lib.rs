@@ -25,6 +25,13 @@ impl Plugin for AnimPlugin {
             .insert_resource(Assets::<AnimationClip>::default());
         app.world_mut()
             .insert_resource(Assets::<StateMachineAsset>::default());
+        // The loaders also touch texture/sheet storage. Windowed, the render plugin has
+        // already inserted these; headless (tests, servers) nobody else will, so make sure
+        // they exist — Aseprite imports work without a GPU, they just skip the pixels.
+        app.world_mut()
+            .init_resource::<Assets<fulcrum_render::Texture>>();
+        app.world_mut()
+            .init_resource::<Assets<fulcrum_render::SpriteSheet>>();
         app.add_systems(
             FixedUpdate,
             (state_machine::drive_animators, player::advance_animations).chain(),

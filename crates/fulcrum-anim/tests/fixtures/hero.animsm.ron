@@ -1,0 +1,11 @@
+StateMachine(
+    initial: "idle",
+    params: { "swing": Trigger },
+    states: {
+        "idle":  (clip: "hero.json#idle"),
+        "swing": (clip: "hero.json#swing", on_finish: "idle"),
+    },
+    transitions: [
+        (from: Any, to: "swing", when: [Triggered("swing")]),
+    ],
+)
