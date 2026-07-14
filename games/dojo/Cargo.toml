@@ -1,0 +1,13 @@
+[package]
+name = "dojo"
+description = "The Animation Book's code-along game: a training dojo where every mechanic is keyed to animation frames."
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[dependencies]
+fulcrum = { workspace = true }
+env_logger = { workspace = true }
+# Manifest-only: lets #[derive(Component)] resolve the `bevy_ecs::` paths it generates.
+bevy_ecs = { workspace = true }

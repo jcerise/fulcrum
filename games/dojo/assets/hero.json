@@ -1,0 +1,195 @@
+{
+  "frames": [
+    {
+      "filename": "hero idle 0",
+      "frame": {
+        "x": 0,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "duration": 160
+    },
+    {
+      "filename": "hero idle 1",
+      "frame": {
+        "x": 16,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "duration": 160
+    },
+    {
+      "filename": "hero idle 2",
+      "frame": {
+        "x": 32,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "duration": 160
+    },
+    {
+      "filename": "hero idle 3",
+      "frame": {
+        "x": 48,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "duration": 160
+    },
+    {
+      "filename": "hero run 4",
+      "frame": {
+        "x": 64,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "duration": 90
+    },
+    {
+      "filename": "hero run 5",
+      "frame": {
+        "x": 80,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "duration": 90
+    },
+    {
+      "filename": "hero run 6",
+      "frame": {
+        "x": 96,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "duration": 90
+    },
+    {
+      "filename": "hero run 7",
+      "frame": {
+        "x": 112,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "duration": 90
+    },
+    {
+      "filename": "hero run 8",
+      "frame": {
+        "x": 0,
+        "y": 16,
+        "w": 16,
+        "h": 16
+      },
+      "duration": 90
+    },
+    {
+      "filename": "hero run 9",
+      "frame": {
+        "x": 16,
+        "y": 16,
+        "w": 16,
+        "h": 16
+      },
+      "duration": 90
+    },
+    {
+      "filename": "hero attack 10",
+      "frame": {
+        "x": 32,
+        "y": 16,
+        "w": 16,
+        "h": 16
+      },
+      "duration": 120
+    },
+    {
+      "filename": "hero attack 11",
+      "frame": {
+        "x": 48,
+        "y": 16,
+        "w": 16,
+        "h": 16
+      },
+      "duration": 70
+    },
+    {
+      "filename": "hero attack 12",
+      "frame": {
+        "x": 64,
+        "y": 16,
+        "w": 16,
+        "h": 16
+      },
+      "duration": 70
+    },
+    {
+      "filename": "hero attack 13",
+      "frame": {
+        "x": 80,
+        "y": 16,
+        "w": 16,
+        "h": 16
+      },
+      "duration": 120
+    },
+    {
+      "filename": "hero hit 14",
+      "frame": {
+        "x": 96,
+        "y": 16,
+        "w": 16,
+        "h": 16
+      },
+      "duration": 70
+    },
+    {
+      "filename": "hero hit 15",
+      "frame": {
+        "x": 112,
+        "y": 16,
+        "w": 16,
+        "h": 16
+      },
+      "duration": 160
+    }
+  ],
+  "meta": {
+    "image": "hero.png",
+    "frameTags": [
+      {
+        "name": "idle",
+        "from": 0,
+        "to": 3,
+        "direction": "forward"
+      },
+      {
+        "name": "run",
+        "from": 4,
+        "to": 9,
+        "direction": "forward"
+      },
+      {
+        "name": "attack",
+        "from": 10,
+        "to": 13,
+        "direction": "forward",
+        "repeat": "1"
+      },
+      {
+        "name": "hit",
+        "from": 14,
+        "to": 15,
+        "direction": "forward",
+        "repeat": "1"
+      }
+    ]
+  }
+}

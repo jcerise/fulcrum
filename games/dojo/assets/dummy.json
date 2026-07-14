@@ -1,0 +1,72 @@
+{
+  "frames": [
+    {
+      "filename": "dummy idle 0",
+      "frame": {
+        "x": 0,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "duration": 400
+    },
+    {
+      "filename": "dummy idle 1",
+      "frame": {
+        "x": 16,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "duration": 400
+    },
+    {
+      "filename": "dummy hit 2",
+      "frame": {
+        "x": 32,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "duration": 60
+    },
+    {
+      "filename": "dummy hit 3",
+      "frame": {
+        "x": 48,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "duration": 90
+    },
+    {
+      "filename": "dummy hit 4",
+      "frame": {
+        "x": 64,
+        "y": 0,
+        "w": 16,
+        "h": 16
+      },
+      "duration": 140
+    }
+  ],
+  "meta": {
+    "image": "dummy.png",
+    "frameTags": [
+      {
+        "name": "idle",
+        "from": 0,
+        "to": 1,
+        "direction": "forward"
+      },
+      {
+        "name": "hit",
+        "from": 2,
+        "to": 4,
+        "direction": "forward",
+        "repeat": "1"
+      }
+    ]
+  }
+}

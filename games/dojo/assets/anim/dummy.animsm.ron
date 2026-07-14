@@ -1,0 +1,11 @@
+StateMachine(
+    initial: "idle",
+    params: { "hit": Trigger },
+    states: {
+        "idle": (clip: "dummy.json#idle"),
+        "hit":  (clip: "dummy.json#hit", on_finish: "idle"),
+    },
+    transitions: [
+        (from: Any, to: "hit", when: [Triggered("hit")]),
+    ],
+)

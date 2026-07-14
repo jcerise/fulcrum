@@ -1,0 +1,17 @@
+StateMachine(
+    initial: "idle",
+    params: { "speed": Float(0.0), "attack": Trigger, "hurt": Trigger },
+    states: {
+        "idle":   (clip: "hero.json#idle"),
+        "run":    (clip: "hero.json#run"),
+        "attack": (clip: "hero.json#attack", on_finish: "idle"),
+        "hit":    (clip: "hero.json#hit", on_finish: "idle"),
+    },
+    transitions: [
+        // Declaration order is priority order: getting bonked beats swinging.
+        (from: Any,           to: "hit",    when: [Triggered("hurt")]),
+        (from: Any,           to: "attack", when: [Triggered("attack")]),
+        (from: State("idle"), to: "run",    when: [Gt("speed", 1.0)]),
+        (from: State("run"),  to: "idle",   when: [Lt("speed", 1.0)]),
+    ],
+)
