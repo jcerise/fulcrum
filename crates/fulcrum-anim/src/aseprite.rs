@@ -51,6 +51,10 @@ struct AseTag {
     to: u32,
     #[serde(default)]
     direction: String,
+    /// Aseprite exports `"repeat": "1"` (a string) for play-N-times tags; the field is
+    /// absent for loop-forever tags.
+    #[serde(default)]
+    repeat: Option<String>,
 }
 
 /// Everything an Aseprite file yields: the sheet (frame regions named by filename) and one
@@ -76,6 +80,25 @@ fn expand_tag(from: u32, to: u32, direction: &str) -> Vec<u32> {
             frames
         }
         _ => forward,
+    }
+}
+
+/// A tag's final frame list and looping flag. A `repeat` of `N` means "play N times, then
+/// stop on the last frame" (Aseprite's Repeat tag property); no `repeat` means loop forever.
+fn tag_frames(tag: &AseTag) -> (Vec<u32>, bool) {
+    let base = expand_tag(tag.from, tag.to, &tag.direction);
+    match tag.repeat.as_deref().and_then(|r| r.parse::<u32>().ok()) {
+        Some(count) => {
+            let count = count.max(1) as usize;
+            let frames = base
+                .iter()
+                .copied()
+                .cycle()
+                .take(base.len() * count)
+                .collect();
+            (frames, false)
+        }
+        None => (base, true),
     }
 }
 
@@ -162,7 +185,7 @@ impl AsepriteLoader<'_> {
                     ),
                 });
             }
-            let frames = expand_tag(tag.from, tag.to, &tag.direction);
+            let (frames, looping) = tag_frames(tag);
             let frame_ticks = frames
                 .iter()
                 .map(|&f| ms_to_ticks(file.frames[f as usize].duration, tick_rate))
@@ -171,7 +194,7 @@ impl AsepriteLoader<'_> {
                 sheet,
                 frames,
                 frame_ticks,
-                looping: true,
+                looping,
             };
             clips.insert(
                 tag.name.clone(),
@@ -221,6 +244,43 @@ mod tests {
         assert_eq!(expand_tag(1, 3, "pingpong"), vec![1, 2, 3, 2]);
         assert_eq!(expand_tag(0, 1, "pingpong"), vec![0, 1], "short pingpong");
         assert_eq!(expand_tag(2, 2, "forward"), vec![2], "single frame");
+    }
+
+    #[test]
+    fn repeat_makes_clips_non_looping() {
+        let tag = |repeat: Option<&str>| AseTag {
+            name: "t".into(),
+            from: 0,
+            to: 1,
+            direction: String::new(),
+            repeat: repeat.map(str::to_string),
+        };
+        // No repeat field: loop forever (Aseprite omits it for infinite tags).
+        assert_eq!(tag_frames(&tag(None)), (vec![0, 1], true));
+        // "repeat": "1" — play once, then finished() can fire.
+        assert_eq!(tag_frames(&tag(Some("1"))), (vec![0, 1], false));
+        // "repeat": "3" — the sequence unrolls, still finite.
+        assert_eq!(tag_frames(&tag(Some("3"))), (vec![0, 1, 0, 1, 0, 1], false));
+        // Nonsense repeat values degrade to play-once rather than panicking.
+        assert_eq!(tag_frames(&tag(Some("0"))), (vec![0, 1], false));
+    }
+
+    #[test]
+    fn repeat_field_parses_from_json() {
+        let json = r#"{
+            "frames": [
+                { "filename": "a", "frame": {"x":0,"y":0,"w":8,"h":8}, "duration": 100 },
+                { "filename": "b", "frame": {"x":8,"y":0,"w":8,"h":8}, "duration": 100 }
+            ],
+            "meta": {
+                "image": "a.png",
+                "frameTags": [
+                    { "name": "swing", "from": 0, "to": 1, "direction": "forward", "repeat": "1" }
+                ]
+            }
+        }"#;
+        let file = parse("a.json", json.as_bytes()).unwrap();
+        assert_eq!(file.meta.frame_tags[0].repeat.as_deref(), Some("1"));
     }
 
     #[test]

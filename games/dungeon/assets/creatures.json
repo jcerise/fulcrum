@@ -18,7 +18,7 @@
     "frameTags": [
       { "name": "player_idle", "from": 0, "to": 1, "direction": "forward" },
       { "name": "player_run", "from": 2, "to": 3, "direction": "forward" },
-      { "name": "player_attack", "from": 4, "to": 5, "direction": "forward" },
+      { "name": "player_attack", "from": 4, "to": 5, "direction": "forward", "repeat": "1" },
       { "name": "slime", "from": 6, "to": 7, "direction": "forward" },
       { "name": "bat", "from": 8, "to": 9, "direction": "forward" },
       { "name": "skeleton", "from": 10, "to": 11, "direction": "forward" }
