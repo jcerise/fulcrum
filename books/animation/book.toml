@@ -1,0 +1,12 @@
+[book]
+title = "Fulcrum Deep Dives: Animation"
+description = "Everything about Fulcrum's animation system — a code-along tutorial and the complete reference."
+authors = ["The Fulcrum contributors"]
+language = "en"
+
+[build]
+build-dir = "built"
+
+[output.html]
+default-theme = "ayu"
+preferred-dark-theme = "ayu"

@@ -74,3 +74,12 @@ cargo run -p grove --example ch05_animation
 
 The hero now bobs at rest and hustles when you move — and you can tune the feel by editing
 the `.animsm.ron`, no recompile (chapter 7 makes that live).
+
+## Want all of it?
+
+Animation is the subject of the first Fulcrum **deep dive**: a whole sub-book
+(`books/animation/` in the repository, `mdbook build books/animation`) with a code-along
+tutorial that builds a game where the sword connects on an exact animation frame — plus the
+complete reference: every clip and player rule, the full Aseprite pipeline (including
+one-shot tags via `repeat`), precise state-machine evaluation semantics, and a recipe
+collection. This chapter is the trailer; that book is the movie.

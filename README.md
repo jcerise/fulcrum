@@ -31,7 +31,13 @@ first-class feature.
 **Start with [The Fulcrum Book](book/src/SUMMARY.md)** — it teaches the whole engine by
 building a small game (`games/grove`) from an empty window up. Build the rendered version
 with `mdbook build book` (output in `book/built/`). Every chapter's complete program compiles
-in CI as an example: `cargo run -p grove --example ch01_window`.
+in CI as an example: `cargo run -p grove --example ch01_window`. New to games entirely? The
+book's **From Zero** track builds Snake from first principles, code-along style.
+
+**Deep dives** (`books/`) take one system each and cover it completely, tutorial first:
+
+- [Animation](books/animation/src/SUMMARY.md) — clips, the Aseprite pipeline, state
+  machines, and frame-keyed gameplay, building `games/dojo` along the way.
 
 ## Status
 

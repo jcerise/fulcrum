@@ -33,6 +33,7 @@ jobs:
           mkdir -p ~/.local/bin
           curl -sSL https://github.com/rust-lang/mdBook/releases/download/v0.5.4/mdbook-v0.5.4-x86_64-unknown-linux-gnu.tar.gz | tar -xz -C ~/.local/bin
           ~/.local/bin/mdbook build book
+          for b in books/*/; do ~/.local/bin/mdbook build "$b"; done
 
   # The determinism gate: every milestone game's seeded/scripted runs plus replay
   # record/playback round-trips, in release (the shipped math). A hash divergence anywhere
