@@ -172,7 +172,8 @@ changing at all. The sim speaks; whether anything is listening is not its busine
 The resources, events, and systems now need registering — but `main.rs` shouldn't have to
 list the simulation's internals line by line (and in chapter 6, tests will need to install
 the same list *without* `main.rs`). Fulcrum's unit of packaging is the same one
-`DefaultPlugins` uses:
+`DefaultPlugins` uses. Still in `games/my-snake/src/game.rs`, below the event types from
+step 2, add:
 
 ```rust,ignore
 /// Installs the whole simulation. Note what it does *not* install: anything visible.
@@ -206,6 +207,33 @@ impl Plugin for GamePlugin {
 > **Toolbox — `register_event::<T>()`:** events need declaring once so the engine can
 > manage their queues (delivery, and cleanup after everyone's read them). Forgetting this
 > line is a startup panic, not a mystery — but it's always *this* line.
+
+> **Sidebar — what `GamePlugin` actually does, and why it exists.** `build` runs exactly
+> once, at the moment something calls `.with_plugin(GamePlugin)`, and its body is the same
+> kind of setup calls `main` has been making since chapter 1 — just relocated. Read it top
+> to bottom:
+>
+> - **The four `insert_resource` lines** place the simulation's state into the world at its
+>   starting values — the `Default` impls you wrote in steps 1 and 2. From this moment on,
+>   any system can ask for `Res<Snake>`, `ResMut<Score>`, and the rest, and get *this* data.
+> - **The two `register_event` lines** open the announcement channels from step 2, so the
+>   engine has queues ready before anything writes or reads.
+> - **`add_systems(Startup, spawn_first_apple)`** runs one system, once, before the first
+>   tick: the opening apple. (You'll write `spawn_first_apple` in step 4.)
+> - **`add_systems(FixedUpdate, (steer, step, restart).chain())`** is the game's heartbeat:
+>   every simulation tick, these three systems run in exactly this order — read the player's
+>   intent, advance the world, then offer the restart.
+>
+> Nothing in that list is new machinery; what's new is that it's *packaged*. And the reason
+> is that this list — resources, events, systems, order — effectively **is** the game, and
+> two different callers are about to need it verbatim. In step 7, `main.rs` will install it
+> under a real window; in chapter 6, the tests will install it with no window at all. Both
+> write `.with_plugin(GamePlugin)`, and both are guaranteed the *identical* simulation.
+> Without the plugin, those ten registrations would live in two files and drift apart the
+> first time you added a resource and forgot one copy — the kind of bug where the game works
+> but the tests quietly test something else. The plugin turns "the entire simulation" into a
+> single named value you can hand to anyone, and it deliberately installs nothing visible:
+> that restraint is what makes chapter 6's headless tests possible.
 
 `steer` needs one addition to match the plugin — the mode gate from step 2 (a dead snake
 shouldn't steer). Add the parameter and the guard:
