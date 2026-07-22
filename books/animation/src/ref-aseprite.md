@@ -16,6 +16,8 @@ aseprite -b hero.ase --sheet hero.png --data hero.json --format json-array --lis
 - `--list-tags` — tags become clips; without this flag you get a sheet and no animations.
 - The PNG is resolved **relative to the JSON's directory** via the JSON's `meta.image`
   field — keep them side by side and paths take care of themselves.
+- No `--trim` — the importer doesn't read trim offsets, and trimmed frames wobble. See
+  [Frame sizes](#frame-sizes-canvases-and-collision) below.
 
 ## What the importer reads
 
@@ -50,6 +52,48 @@ Per **tag**, one `AnimationClip`:
 `repeat` is how one-shot animations exist: in Aseprite, set the tag's *Repeat* property to
 1 (Tag Properties → Repeat). A machine state whose `on_finish` never fires is almost always
 a tag missing its `repeat` — the clip loops, so it never finishes.
+
+## Frame sizes, canvases, and collision
+
+Nothing in the pipeline assumes frames share a size. A sheet's regions are arbitrary pixel
+rectangles (`SpriteSheet { regions: Vec<Rect> }`), and a `Sprite` with no `custom_size`
+draws at its current region's own size — so a 16×16 critter and a 48×48 boss come through
+the same workflow, and two creatures never need to agree on dimensions.
+
+*Within one animation*, though, mixed sizes raise a question the renderer can't answer for
+you: where does the bigger frame sit? A sprite is placed by its `anchor` — a *fraction* of
+the drawn size, centered by default — so if the spear-thrust frame is 12 px wider than the
+rest of the clip, a centered anchor shoves the body 6 px backward for exactly one frame:
+the classic frame wobble. The idiomatic fix is to never have mixed sizes in a clip at all:
+
+**Size the canvas for the extremes, and export untrimmed.** In Aseprite the canvas is
+fixed per file; make it big enough for the most extended frame — the thrust, the
+follow-through — and let the compact frames carry transparent padding. Untrimmed, every
+frame exports at canvas size, alignment is automatic under the default centered anchor,
+and the padding costs only texture space: at pixel-art scale, the right trade essentially
+always.
+
+> **Don't pass `--trim`.** Aseprite can shrink each exported frame to its opaque pixels,
+> emitting `spriteSourceSize`/`sourceSize` offsets so an engine can re-align them. The
+> importer reads only `frame` and `duration` — a trimmed export loads without error and
+> then wobbles, because the offsets that would re-anchor each frame were dropped on the
+> floor.
+
+If you *do* mix sizes in a clip — hand-packed sheets from elsewhere, say — `anchor` is
+your lever: bottom-center keeps feet planted while height varies. One warning label on
+that lever: `flip_x` mirrors the sprite's pixels, not its geometry, so an off-center
+anchor stays where it was when the sprite flips. A direction-facing game that leans on
+asymmetric anchors must mirror the anchor by hand alongside the flip.
+
+Which leaves the question the padded canvas always raises: **doesn't a canvas sized for
+the spear thrust widen the hitbox for every frame?** No — nothing in Fulcrum derives
+collision from a sprite. The `Sprite` is presentation; the simulation never reads one
+(headless, sprites don't even exist). What things can *hit* is simulation data you
+declare: the dojo's strike is `delta.length() <= STRIKE_RANGE`, gated to the extension
+frame ([Gameplay on Frames](tut04-frame-keyed.md)); spatial queries take explicit shapes
+(`SpatialGrid::query_circle(center, radius)`); grid games compare cells. The spear's
+*reach* is `STRIKE_RANGE` on the frames where the spear is out — gameplay data, keyed to
+the animation, and entirely indifferent to how much transparent padding the art carries.
 
 ## Loading
 
