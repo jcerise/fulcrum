@@ -452,7 +452,13 @@ use fulcrum::prelude::*;
 use my_snake::game::{self, Apple, CELL, GRID_H, GRID_W, GamePlugin, Snake};
 ```
 
-(`my_snake` with an underscore — Cargo maps the crate name `my-snake` to that identifier.)
+Two things to notice about that import. First, `my_snake` with an underscore — Cargo maps
+the crate name `my-snake` to that identifier. Second, `cell_center` is deliberately *not*
+in the list, even though you moved it to `game.rs` in step 1: the `self` imports the `game`
+module itself, and the two call sites left in this file — one in `setup`, one in
+`project_snake` — change to the qualified form `game::cell_center(...)`. (Why qualify
+instead of import? Taste, mostly: `game::cell_center` reads as "the *sim's* coordinate
+convention, consulted by the view" — the crate boundary kept visible at the call site.)
 In `main`, drop the `insert_resource(Snake {...})` and `insert_resource(StepTimer {...})`
 blocks and the `add_system` line, and add the plugin:
 
@@ -493,8 +499,9 @@ fn dress_apples(
 
 That `Without<Sprite>` filter is doing quiet, tidy work: the query matches only apples that
 haven't been dressed yet, so the system is naturally idempotent — new apples get sprites
-once, dressed ones are never touched again. Remember `project_snake` and `cell_center` now
-live across the crate boundary: the calls become `game::cell_center(...)`.
+once, dressed ones are never touched again. (And if the compiler is still complaining about
+`cell_center`, that's the qualified-call change from the top of this step:
+`game::cell_center(...)`.)
 
 ## Checkpoint
 
