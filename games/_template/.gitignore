@@ -1,0 +1,5 @@
+# In-place builds of the template must not dirty the fulcrum repo. After copying the
+# template out to start a real game, keep /target but consider committing Cargo.lock
+# for reproducible builds.
+/target
+Cargo.lock

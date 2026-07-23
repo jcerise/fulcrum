@@ -1,6 +1,9 @@
 [workspace]
 resolver = "2"
 members = ["crates/*", "games/*"]
+# _template is a standalone package meant to be copied outside this repo; it carries its own
+# [workspace] table and profile block, so it must not be adopted as a member.
+exclude = ["games/_template"]
 
 [workspace.package]
 version = "0.1.0"

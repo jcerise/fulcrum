@@ -1,0 +1,25 @@
+[package]
+name = "my-game"
+description = "A new Fulcrum game, started from games/_template. See README.md for copy-out steps."
+version = "0.1.0"
+edition = "2024"
+
+# Deliberately standalone: this package is meant to be copied outside the fulcrum repo,
+# so it inherits nothing from the workspace and declares itself its own root.
+[workspace]
+
+[dependencies]
+# From inside the fulcrum repo this resolves as-is. After copying the template out,
+# update the path to your checkout (e.g. "../fulcrum/crates/fulcrum") or switch to a
+# git dependency — see README.md.
+fulcrum = { path = "../../crates/fulcrum" }
+env_logger = "0.11"
+# Manifest-only: lets #[derive(Component)] resolve the `bevy_ecs::` paths it generates.
+# Game source imports only fulcrum::prelude. Keep in lockstep with fulcrum's own pin.
+bevy_ecs = "0.19"
+
+# Keep dependencies (wgpu, image decoding, ...) fast in debug builds. The fulcrum workspace
+# root does this too, but profiles only apply from the root manifest — a standalone game
+# needs its own copy.
+[profile.dev.package."*"]
+opt-level = 2
