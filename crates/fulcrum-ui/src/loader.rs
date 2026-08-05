@@ -116,11 +116,15 @@ fn parse_ui(path: &str, source: &str) -> Result<UiDef, AssetError> {
 }
 
 /// Loads `.ui.ron` layouts and manages their trees.
+///
+/// Works headless: without a GPU there is no texture loading, so panels fall back to their
+/// flat color and `Image` nodes become bare layout nodes — the tree, ids, and interaction
+/// are otherwise identical, which is what makes UI testable without a window.
 #[derive(SystemParam)]
 pub struct UiLoader<'w, 's> {
     commands: Commands<'w, 's>,
     server: Res<'w, AssetServer>,
-    assets: AssetLoader<'w>,
+    assets: Option<AssetLoader<'w>>,
     children: Query<'w, 's, &'static Children>,
 }
 
@@ -151,8 +155,14 @@ impl UiLoader<'_, '_> {
         }
     }
 
-    fn resolve_image(&mut self, path: &str) -> Handle<Texture> {
-        self.assets.load(path)
+    fn resolve_image(&mut self, path: &str) -> Option<Handle<Texture>> {
+        match self.assets.as_mut() {
+            Some(assets) => Some(assets.load(path)),
+            None => {
+                log::warn!("ui: no GPU context; skipping texture `{path}`");
+                None
+            }
+        }
     }
 
     fn spawn_node(&mut self, def: &NodeDef, parent: Option<Entity>) -> Entity {
@@ -175,7 +185,7 @@ impl UiLoader<'_, '_> {
                 image,
                 nine_slice,
             } => {
-                let image = image.as_ref().map(|path| self.resolve_image(path));
+                let image = image.as_ref().and_then(|path| self.resolve_image(path));
                 self.commands.entity(entity).insert(UiPanel {
                     color: *color,
                     image,
@@ -213,11 +223,13 @@ impl UiLoader<'_, '_> {
                 ));
             }
             KindDef::Image { image, color } => {
-                let image = self.resolve_image(image);
-                self.commands.entity(entity).insert(UiImage {
-                    image,
-                    color: *color,
-                });
+                // Headless (no GPU): the node still exists for layout, just draws nothing.
+                if let Some(image) = self.resolve_image(image) {
+                    self.commands.entity(entity).insert(UiImage {
+                        image,
+                        color: *color,
+                    });
+                }
             }
         }
         if let Some(parent) = parent {

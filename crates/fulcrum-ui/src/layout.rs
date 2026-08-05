@@ -200,11 +200,20 @@ pub(crate) fn layout_system(
         }
     }
 
+    let mut placed = vec![false; entities.len()];
     for (order, (index, rect)) in solve(&arena, &roots, viewport).into_iter().enumerate() {
+        placed[index] = true;
         commands.entity(entities[index]).try_insert(UiRect {
             rect,
             order: order as u32,
         });
+    }
+    // Nodes that weren't placed (hidden, or inside a hidden subtree) must lose their rect,
+    // or they'd keep drawing and hit-testing at their last position.
+    for (index, entity) in entities.iter().enumerate() {
+        if !placed[index] {
+            commands.entity(*entity).try_remove::<UiRect>();
+        }
     }
 }
 

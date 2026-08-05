@@ -42,8 +42,9 @@ Decisions you're building on (and where they're enforced):
   component registry, sandboxed (no io, sim-clock time, per-mod deterministic RNG, an
   instruction budget) so mods inherit the determinism contract instead of threatening it.
 
-The seven games in `games/` double as the engine's integration tests, in ascending order of
+The eight games in `games/` double as the engine's integration tests, in ascending order of
 ambition: `snake` (the From Zero track), `pong` (phase 1: core loop), `asteroids` (phase 2:
-sheets/audio/text), `dojo` (the animation deep dive: frame-keyed gameplay), `dungeon`
-(phase 3: fully data-driven), `grove` (this book), and `rts-slice` (phase 4: 200 units on
-flow fields, Lua-scripted waves, a sample mod, and battles that replay hash-clean).
+sheets/audio/text), `dojo` (the animation deep dive: frame-keyed gameplay), `bazaar` (the UI
+deep dive: a market stall played entirely through its skinned UI), `dungeon` (phase 3: fully
+data-driven), `grove` (this book), and `rts-slice` (phase 4: 200 units on flow fields,
+Lua-scripted waves, a sample mod, and battles that replay hash-clean).

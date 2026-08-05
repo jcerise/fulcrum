@@ -1,0 +1,12 @@
+// UI Book, chapter 1: one panel, one label, pinned to a corner of the 320x180 UI grid.
+Ui(root: Node(
+    size: Fill,
+    children: [
+        Node(anchor: TopLeft, offset: (4, 4), size: Px((92, 24)),
+            kind: Panel(color: (r: 0.13, g: 0.09, b: 0.07, a: 0.85)),
+            children: [
+                Node(id: "gold", offset: (7, 7), kind: Label(text: "Gold: 0", size: 8)),
+            ],
+        ),
+    ],
+))

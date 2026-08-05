@@ -1,0 +1,13 @@
+[package]
+name = "bazaar"
+description = "The UI Book's code-along game: a market stall run entirely through a skinned UI."
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[dependencies]
+fulcrum = { workspace = true }
+env_logger = { workspace = true }
+# Manifest-only: lets #[derive(Component)] resolve the `bevy_ecs::` paths it generates.
+bevy_ecs = { workspace = true }

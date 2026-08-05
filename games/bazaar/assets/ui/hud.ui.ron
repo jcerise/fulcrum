@@ -1,0 +1,86 @@
+// The bazaar's HUD, wearing the day-market skin. Every panel shares one nine-slice frame
+// (corners stay 8 texture pixels; edges and center stretch). The night skin swaps the
+// texture and colors at runtime without touching this file — see `apply_theme` in main.rs.
+Ui(root: Node(
+    size: Fill,
+    children: [
+        // Top-left: the day's numbers.
+        Node(anchor: TopLeft, offset: (4, 4), size: Px((92, 32)), stack: Vertical(2),
+            kind: Panel(color: (r: 1.0, g: 1.0, b: 1.0, a: 1.0),
+                image: "ui/day_frame.png", nine_slice: (8, 8, 8, 8)),
+            children: [
+                Node(id: "gold", offset: (7, 7), kind: Label(text: "Gold: 0", size: 8)),
+                Node(id: "day", offset: (7, 0), kind: Label(text: "Sundown: 90s", size: 8)),
+            ],
+        ),
+        // Top-right: the line, front first.
+        Node(anchor: TopRight, pivot: (1, 0), offset: (-4, 4), size: Px((104, 52)), stack: Vertical(2),
+            kind: Panel(color: (r: 1.0, g: 1.0, b: 1.0, a: 1.0),
+                image: "ui/day_frame.png", nine_slice: (8, 8, 8, 8)),
+            children: [
+                Node(offset: (7, 7), kind: Label(text: "The line", size: 8,
+                    color: (r: 0.95, g: 0.75, b: 0.35, a: 1.0))),
+                Node(id: "q0", offset: (7, 0), kind: Label(text: "", size: 8)),
+                Node(id: "q1", offset: (7, 0), kind: Label(text: "", size: 8)),
+                Node(id: "q2", offset: (7, 0), kind: Label(text: "", size: 8)),
+            ],
+        ),
+        // Bottom-center: the counter. One column per ware: icon over serve button.
+        Node(anchor: BottomCenter, pivot: (0.5, 1), offset: (0, -4), size: Px((242, 50)), stack: Horizontal(6),
+            kind: Panel(color: (r: 1.0, g: 1.0, b: 1.0, a: 1.0),
+                image: "ui/day_frame.png", nine_slice: (8, 8, 8, 8)),
+            children: [
+                Node(offset: (7, 7), stack: Vertical(2), children: [
+                    Node(offset: (28, 0), size: Px((16, 16)), kind: Image(image: "ui/figs.png")),
+                    Node(id: "serve_figs", size: Px((72, 18)), kind: Button(text: "Figs 3g", text_size: 8, style: (
+                        normal: (r: 0.45, g: 0.29, b: 0.15, a: 1.0),
+                        hover: (r: 0.56, g: 0.38, b: 0.20, a: 1.0),
+                        pressed: (r: 0.33, g: 0.21, b: 0.11, a: 1.0),
+                    ))),
+                ]),
+                Node(offset: (0, 7), stack: Vertical(2), children: [
+                    Node(offset: (28, 0), size: Px((16, 16)), kind: Image(image: "ui/silk.png")),
+                    Node(id: "serve_silk", size: Px((72, 18)), kind: Button(text: "Silk 12g", text_size: 8, style: (
+                        normal: (r: 0.45, g: 0.29, b: 0.15, a: 1.0),
+                        hover: (r: 0.56, g: 0.38, b: 0.20, a: 1.0),
+                        pressed: (r: 0.33, g: 0.21, b: 0.11, a: 1.0),
+                    ))),
+                ]),
+                Node(offset: (0, 7), stack: Vertical(2), children: [
+                    Node(offset: (28, 0), size: Px((16, 16)), kind: Image(image: "ui/lamps.png")),
+                    Node(id: "serve_lamps", size: Px((72, 18)), kind: Button(text: "Lamps 7g", text_size: 8, style: (
+                        normal: (r: 0.45, g: 0.29, b: 0.15, a: 1.0),
+                        hover: (r: 0.56, g: 0.38, b: 0.20, a: 1.0),
+                        pressed: (r: 0.33, g: 0.21, b: 0.11, a: 1.0),
+                    ))),
+                ]),
+            ],
+        ),
+        // Pause menu: hidden until the sim says otherwise.
+        Node(id: "pause", visible: false, anchor: Center, pivot: (0.5, 0.5), size: Px((120, 76)), stack: Vertical(4),
+            kind: Panel(color: (r: 1.0, g: 1.0, b: 1.0, a: 1.0),
+                image: "ui/day_frame.png", nine_slice: (8, 8, 8, 8)),
+            children: [
+                Node(offset: (12, 8), kind: Label(text: "PAUSED", size: 16)),
+                Node(id: "resume", size: Px((104, 18)), offset: (8, 0), kind: Button(text: "Resume", text_size: 8)),
+                Node(id: "quit", size: Px((104, 18)), offset: (8, 0), kind: Button(text: "Quit", text_size: 8)),
+            ],
+        ),
+        // Sundown summary.
+        Node(id: "summary", visible: false, anchor: Center, pivot: (0.5, 0.5), size: Px((150, 78)), stack: Vertical(4),
+            kind: Panel(color: (r: 1.0, g: 1.0, b: 1.0, a: 1.0),
+                image: "ui/day_frame.png", nine_slice: (8, 8, 8, 8)),
+            children: [
+                Node(offset: (19, 8), kind: Label(text: "SUNDOWN", size: 16)),
+                Node(id: "summary_text", offset: (8, 0), kind: Label(text: "", size: 8)),
+                Node(id: "summary_gold", offset: (8, 0), kind: Label(text: "", size: 8,
+                    color: (r: 0.95, g: 0.75, b: 0.35, a: 1.0))),
+                Node(id: "next_day", size: Px((134, 18)), offset: (8, 0), kind: Button(text: "Next day", text_size: 8)),
+            ],
+        ),
+        // Bare label, deliberately: labels never block the pointer.
+        Node(id: "hint", anchor: BottomLeft, pivot: (0, 1), offset: (4, -4),
+            kind: Label(text: "T: skin  Esc: pause\nClick the street to call out", size: 8,
+                color: (r: 1.0, g: 1.0, b: 1.0, a: 0.7))),
+    ],
+))

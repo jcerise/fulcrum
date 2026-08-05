@@ -1,0 +1,29 @@
+// UI Book, chapter 2: the readout HUD — stacked labels the sim drives every frame.
+Ui(root: Node(
+    size: Fill,
+    children: [
+        // Top-left: the day's numbers.
+        Node(anchor: TopLeft, offset: (4, 4), size: Px((92, 32)), stack: Vertical(2),
+            kind: Panel(color: (r: 0.13, g: 0.09, b: 0.07, a: 0.85)),
+            children: [
+                Node(id: "gold", offset: (7, 7), kind: Label(text: "Gold: 0", size: 8)),
+                Node(id: "day", offset: (7, 0), kind: Label(text: "Sundown: 90s", size: 8)),
+            ],
+        ),
+        // Top-right: the line, front first.
+        Node(anchor: TopRight, pivot: (1, 0), offset: (-4, 4), size: Px((104, 52)), stack: Vertical(2),
+            kind: Panel(color: (r: 0.13, g: 0.09, b: 0.07, a: 0.85)),
+            children: [
+                Node(offset: (7, 7), kind: Label(text: "The line", size: 8,
+                    color: (r: 0.95, g: 0.75, b: 0.35, a: 1.0))),
+                Node(id: "q0", offset: (7, 0), kind: Label(text: "", size: 8)),
+                Node(id: "q1", offset: (7, 0), kind: Label(text: "", size: 8)),
+                Node(id: "q2", offset: (7, 0), kind: Label(text: "", size: 8)),
+            ],
+        ),
+        // Bare label, deliberately: labels never block the pointer.
+        Node(id: "hint", anchor: BottomLeft, pivot: (0, 1), offset: (4, -4),
+            kind: Label(text: "Esc: pause\nClick the street to call out", size: 8,
+                color: (r: 1.0, g: 1.0, b: 1.0, a: 0.7))),
+    ],
+))

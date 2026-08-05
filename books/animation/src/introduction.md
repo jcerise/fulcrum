@@ -1,8 +1,8 @@
 # Introduction
 
-This is the first of the Fulcrum **deep dives** — sub-books that take one system from The
-Fulcrum Book (`book/` in the repository) and cover it completely: a code-along tutorial
-first, then the full reference. The main book gives animation one chapter; this book gives
+This is a Fulcrum **deep dive** — the sub-books that take one system from The Fulcrum Book
+(`book/` in the repository) and cover it completely: a code-along tutorial first, then the
+full reference. The main book gives animation one chapter; this book gives
 it everything the system can do, and everything it deliberately won't.
 
 The deep dives exist because of a conviction about game frameworks: what most of them are

@@ -63,7 +63,7 @@ modding as a first-class feature.
 - `games/` — the games that dogfood the engine, doubling as integration tests:
   - Milestones: `pong`, `asteroids`, `dungeon`, `rts-slice` (one per engine phase).
   - Tutorial games: `snake` (From Zero track), `grove` (The Fulcrum Book), `dojo`
-    (the Animation Book).
+    (the Animation Book), `bazaar` (the UI Book).
   - `_template` — a standalone scaffold for starting your own game (see below).
 - `book/`, `books/` — The Fulcrum Book and the deep-dive books.
 - `docs/` — design documents (`determinism.md`).
@@ -82,6 +82,8 @@ book's **From Zero** track builds Snake from first principles, code-along style.
 
 - [Animation](books/animation/src/SUMMARY.md) — clips, the Aseprite pipeline, state
   machines, and frame-keyed gameplay, building `games/dojo` along the way.
+- [UI](books/ui/src/SUMMARY.md) — layout files, widgets, the click path across the sim
+  boundary, nine-slice skins and themes, building `games/bazaar` along the way.
 
 ## Starting your own game
 

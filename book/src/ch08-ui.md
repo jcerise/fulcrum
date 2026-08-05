@@ -70,3 +70,12 @@ Hover and pressed styling happen for free; `Res<UiFocus>` tells world-click code
 pointer is over UI so a menu click doesn't also swing a sword. (Grove keeps its UI minimal —
 a HUD and an end-of-round banner; the dungeon game in the repository shows a pause menu with
 working buttons and an inventory toggle built from the same pieces.)
+
+## Want all of it?
+
+The UI is the subject of a Fulcrum **deep dive**: a whole sub-book (`books/ui/` in the
+repository, `mdbook build books/ui`) with a code-along tutorial that builds a market stall
+run entirely through its UI — then dresses the whole thing in swappable nine-slice skins.
+Plus the complete reference: exact layout semantics, every widget and interaction rule, the
+full `.ui.ron` format, theming patterns, and headless UI testing down to a synthetic
+pointer clicking the real layout. This chapter is the trailer; that book is the movie.
