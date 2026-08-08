@@ -24,6 +24,10 @@ Three opinions shape everything in it:
 
 ## How this book works
 
+**Just want to poke at it?** [Quickstart](quickstart.md) is a five-minute, four-step page
+that gets a window, a square, arrow-key movement, and wall collision running in one file —
+written for engineers who read Rust fluently and would rather skim callouts than a tutorial.
+
 **Never built a game before?** This book has an on-ramp written just for you: [From Zero](
 fz01-what-is-a-game.md) is a code-along tutorial that builds Snake in six deliberately slow
 chapters — you create your own crate and type every line — assuming solid programming
