@@ -231,7 +231,7 @@ pub(crate) fn resolve_aseprite_defs(
             }
         };
         let Some(&clip) = import.clips.get(tag) else {
-            log::error!("`{file}` has no tag `{tag}`");
+            log::error!("{}", import.clips.missing_clip_message(tag));
             continue;
         };
         commands.entity(entity).insert(AnimationPlayer::play(clip));

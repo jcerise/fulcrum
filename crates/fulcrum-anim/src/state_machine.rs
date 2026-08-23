@@ -376,7 +376,7 @@ impl AnimatorLoader<'_> {
                 .clips
                 .get(tag)
                 .copied()
-                .ok_or_else(|| format!("`{file}` has no tag `{tag}`"))
+                .ok_or_else(|| import.clips.missing_clip_message(tag))
         })?;
         Ok(self.machines.insert_with_path(path, machine))
     }

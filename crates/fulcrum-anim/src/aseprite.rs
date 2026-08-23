@@ -63,7 +63,81 @@ pub struct AsepriteImport {
     /// Sheet with one region per exported frame.
     pub sheet: Handle<SpriteSheet>,
     /// Clips by tag name.
-    pub clips: FxHashMap<String, Handle<AnimationClip>>,
+    pub clips: ClipMap,
+}
+
+/// Clips by Aseprite tag name, remembering which file they came from.
+///
+/// Indexing (`import.clips["idle"]`) is the common case; a missing tag panics with the source
+/// file and the tags that *do* exist, rather than a bare "no entry found for key". Use
+/// [`get`](FxHashMap::get) (via `Deref`) when a missing tag is not a bug.
+#[derive(Clone, Debug, Default)]
+pub struct ClipMap {
+    path: String,
+    clips: FxHashMap<String, Handle<AnimationClip>>,
+}
+
+impl ClipMap {
+    /// The Aseprite JSON these clips were imported from.
+    pub fn source_path(&self) -> &str {
+        &self.path
+    }
+
+    /// Tag names in sorted order — handy for error messages and asset tooling.
+    pub fn tag_names(&self) -> Vec<&str> {
+        let mut names: Vec<&str> = self.clips.keys().map(String::as_str).collect();
+        names.sort_unstable();
+        names
+    }
+
+    /// The message used when `name` isn't a tag in this file: what was asked for, where it was
+    /// looked for, and what's actually available.
+    pub fn missing_clip_message(&self, name: &str) -> String {
+        if self.clips.is_empty() {
+            return format!(
+                "no animation clip `{name}` in `{}`: the file has no tags at all \
+                 (re-export from Aseprite with --list-tags)",
+                self.path
+            );
+        }
+        format!(
+            "no animation clip `{name}` in `{}`; available tags: {}",
+            self.path,
+            self.tag_names()
+                .iter()
+                .map(|n| format!("`{n}`"))
+                .collect::<Vec<_>>()
+                .join(", ")
+        )
+    }
+}
+
+impl std::ops::Deref for ClipMap {
+    type Target = FxHashMap<String, Handle<AnimationClip>>;
+
+    fn deref(&self) -> &Self::Target {
+        &self.clips
+    }
+}
+
+impl std::ops::Index<&str> for ClipMap {
+    type Output = Handle<AnimationClip>;
+
+    fn index(&self, name: &str) -> &Self::Output {
+        match self.clips.get(name) {
+            Some(clip) => clip,
+            None => panic!("{}", self.missing_clip_message(name)),
+        }
+    }
+}
+
+impl<'a> IntoIterator for &'a ClipMap {
+    type Item = (&'a String, &'a Handle<AnimationClip>);
+    type IntoIter = std::collections::hash_map::Iter<'a, String, Handle<AnimationClip>>;
+
+    fn into_iter(self) -> Self::IntoIter {
+        self.clips.iter()
+    }
 }
 
 /// Expand a tag's frame range by direction: `forward`, `reverse`, or `pingpong`
@@ -208,7 +282,13 @@ impl AsepriteLoader<'_> {
             );
         }
 
-        Ok(AsepriteImport { sheet, clips })
+        Ok(AsepriteImport {
+            sheet,
+            clips: ClipMap {
+                path: json_path.to_string(),
+                clips,
+            },
+        })
     }
 }
 
@@ -286,6 +366,60 @@ mod tests {
         }"#;
         let file = parse("a.json", json.as_bytes()).unwrap();
         assert_eq!(file.meta.frame_tags[0].repeat.as_deref(), Some("1"));
+    }
+
+    fn clip_map(path: &str, tags: &[&str]) -> ClipMap {
+        ClipMap {
+            path: path.to_string(),
+            clips: tags
+                .iter()
+                .map(|tag| (tag.to_string(), Handle::INVALID))
+                .collect(),
+        }
+    }
+
+    #[test]
+    fn missing_clip_names_the_file_and_the_tags_that_exist() {
+        let clips = clip_map("assets/hero.json", &["run", "idle", "attack"]);
+        let message = clips.missing_clip_message("idle-right");
+        assert!(message.contains("idle-right"), "{message}");
+        assert!(message.contains("assets/hero.json"), "{message}");
+        // Sorted, so the hint reads the same on every run.
+        assert!(message.contains("`attack`, `idle`, `run`"), "{message}");
+    }
+
+    #[test]
+    fn missing_clip_with_no_tags_at_all_points_at_the_export() {
+        let message = clip_map("assets/hero.json", &[]).missing_clip_message("idle");
+        assert!(message.contains("no tags at all"), "{message}");
+        assert!(message.contains("--list-tags"), "{message}");
+    }
+
+    #[test]
+    fn indexing_a_missing_clip_panics_with_that_message() {
+        let clips = clip_map("assets/hero.json", &["idle"]);
+        let panic = std::panic::catch_unwind(|| clips["idle-right"]).unwrap_err();
+        let message = panic
+            .downcast_ref::<String>()
+            .map(String::as_str)
+            .unwrap_or("");
+        assert!(
+            message.contains("no animation clip `idle-right`"),
+            "{message}"
+        );
+        assert!(message.contains("assets/hero.json"), "{message}");
+        assert!(message.contains("available tags: `idle`"), "{message}");
+    }
+
+    #[test]
+    fn indexing_an_existing_clip_still_works() {
+        let clips = clip_map("assets/hero.json", &["idle"]);
+        assert_eq!(clips["idle"], Handle::INVALID);
+        assert!(
+            clips.get("idle").is_some(),
+            "map reads still work via Deref"
+        );
+        assert_eq!(clips.len(), 1);
     }
 
     #[test]

@@ -2287,6 +2287,32 @@ dependencies = [
 ]
 
 [[package]]
+name = "murmuration"
+version = "0.1.0"
+dependencies = [
+ "bevy_ecs",
+ "env_logger",
+ "fulcrum",
+ "serde",
+]
+
+[[package]]
+name = "my-dojo"
+version = "0.1.0"
+dependencies = [
+ "bevy_ecs",
+ "fulcrum",
+]
+
+[[package]]
+name = "my-snake"
+version = "0.1.0"
+dependencies = [
+ "bevy_ecs",
+ "fulcrum",
+]
+
+[[package]]
 name = "naga"
 version = "29.0.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"

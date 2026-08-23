@@ -11,7 +11,7 @@ use bevy_ecs::prelude::Local;
 use fulcrum_asset::{AssetEvent, Assets};
 use fulcrum_core::{EventReader, FixedUpdate, Fulcrum, IntoScheduleConfigs, Plugin, Update};
 
-pub use aseprite::{AsepriteImport, AsepriteLoader};
+pub use aseprite::{AsepriteImport, AsepriteLoader, ClipMap};
 pub use clip::AnimationClip;
 pub use player::AnimationPlayer;
 pub use state_machine::{Animator, AnimatorLoader, Condition, StateMachineAsset};
