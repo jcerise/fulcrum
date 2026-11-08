@@ -80,8 +80,8 @@ pub mod prelude {
         FlowField, NavGrid, SpatialGrid, SpatialIndexed, SpatialPlugin, astar, simplify_path,
     };
     pub use fulcrum_ui::{
-        Anchor, ButtonStyle, DebugUi, DebugUiFocus, DebugUiPlugin, StackDir, UiButton, UiEvent,
-        UiFocus, UiId, UiImage, UiLabel, UiLoader, UiNode, UiPanel, UiPlugin, UiQuery, UiRect,
-        UiSize,
+        Anchor, ButtonStyle, DebugPanel, DebugPanels, DebugUi, DebugUiFocus, DebugUiPlugin,
+        DebugValue, StackDir, UiButton, UiEvent, UiFocus, UiId, UiImage, UiLabel, UiLoader, UiNode,
+        UiPanel, UiPlugin, UiQuery, UiRect, UiSize,
     };
 }

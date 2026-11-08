@@ -76,6 +76,9 @@ pub struct Fulcrum {
     runner: Option<Runner>,
     /// Per-tick updaters for registered event types (double-buffered message queues).
     event_updaters: Vec<fn(&mut World)>,
+    /// Functions run at the start of every tick, after event-queue updates and before
+    /// `FixedUpdate`. Registered with [`Fulcrum::add_tick_start_hook`].
+    tick_start_hooks: Vec<fn(&mut World)>,
 }
 
 impl Fulcrum {
@@ -112,6 +115,7 @@ impl Fulcrum {
             world,
             runner: None,
             event_updaters: Vec::new(),
+            tick_start_hooks: Vec::new(),
         };
         app.register_event::<crate::replay::CommandEvent>();
         app
@@ -168,6 +172,18 @@ impl Fulcrum {
             self.event_updaters
                 .push(|world| world.resource_mut::<Messages<E>>().update());
         }
+    }
+
+    /// Register a function to run at the start of every tick, before any [`FixedUpdate`]
+    /// system. Runs in registration order. Intended for engine plugins that need per-tick
+    /// housekeeping ahead of game systems (e.g. clearing a per-tick buffer); game logic belongs
+    /// in `FixedUpdate`.
+    ///
+    /// A hook must not mutate simulation state: it runs outside replay recording/injection, so
+    /// any simulation change it makes is invisible to replays.
+    pub fn add_tick_start_hook(&mut self, hook: fn(&mut World)) -> &mut Self {
+        self.tick_start_hooks.push(hook);
+        self
     }
 
     /// Add systems to an arbitrary schedule. Non-consuming, for use inside plugins; games
@@ -233,6 +249,9 @@ impl Fulcrum {
         crate::transform::snapshot_previous_transforms(&mut self.world);
         for update in &self.event_updaters {
             update(&mut self.world);
+        }
+        for hook in &self.tick_start_hooks {
+            hook(&mut self.world);
         }
         self.replay_step();
         self.world.run_schedule(FixedUpdate);
@@ -434,5 +453,37 @@ impl Fulcrum {
             playback.cursor
         );
         Ok(())
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use bevy_ecs::prelude::{Res, ResMut};
+
+    #[derive(Resource, Default)]
+    struct HookRan(bool);
+
+    #[derive(Resource, Default)]
+    struct SystemSawHook(bool);
+
+    fn set_flag(world: &mut World) {
+        world.resource_mut::<HookRan>().0 = true;
+    }
+
+    fn check_flag(flag: Res<HookRan>, mut saw: ResMut<SystemSawHook>) {
+        assert!(flag.0, "tick-start hook must run before FixedUpdate systems");
+        saw.0 = true;
+    }
+
+    #[test]
+    fn tick_start_hook_runs_before_fixed_update() {
+        let mut app = Fulcrum::new("test")
+            .insert_resource(HookRan::default())
+            .insert_resource(SystemSawHook::default())
+            .add_system(check_flag);
+        app.add_tick_start_hook(set_flag);
+        app.tick();
+        assert!(app.world().resource::<SystemSawHook>().0);
     }
 }

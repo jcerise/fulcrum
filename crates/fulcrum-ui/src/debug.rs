@@ -1,6 +1,11 @@
 //! The egui debug overlay: F12 toggles a world inspector (entities with editable registered
 //! components), performance stats, and loaded-asset lists with force-reload buttons.
 //!
+//! Games can contribute read-only label/value windows through the [`DebugPanels`] resource.
+//! Fill it from a `FixedUpdate` system: the engine clears the list at the start of every
+//! simulation tick, so a system must refill it each tick (and a panel vanishes within one tick
+//! of its feeding system stopping).
+//!
 //! Dev tooling only — editing state here invalidates determinism/replay guarantees for the run
 //! (a notice is logged on the first edit).
 
@@ -31,6 +36,100 @@ pub struct DebugUiFocus {
     pub wants_keyboard: bool,
 }
 
+/// A value rendered in a [`DebugPanel`] row. The overlay owns formatting, so numeric values
+/// allocate nothing.
+#[derive(Clone, Debug, PartialEq)]
+pub enum DebugValue {
+    /// Shown verbatim.
+    Text(String),
+    /// Shown with three decimal places.
+    F32(f32),
+    /// Shown as a plain integer.
+    I64(i64),
+    /// Shown as `yes` / `no`.
+    Bool(bool),
+}
+
+impl From<f32> for DebugValue {
+    fn from(v: f32) -> Self {
+        Self::F32(v)
+    }
+}
+
+impl From<i32> for DebugValue {
+    fn from(v: i32) -> Self {
+        Self::I64(v as i64)
+    }
+}
+
+impl From<i64> for DebugValue {
+    fn from(v: i64) -> Self {
+        Self::I64(v)
+    }
+}
+
+impl From<u32> for DebugValue {
+    fn from(v: u32) -> Self {
+        Self::I64(v as i64)
+    }
+}
+
+impl From<bool> for DebugValue {
+    fn from(v: bool) -> Self {
+        Self::Bool(v)
+    }
+}
+
+impl From<&str> for DebugValue {
+    fn from(v: &str) -> Self {
+        Self::Text(v.to_string())
+    }
+}
+
+impl From<String> for DebugValue {
+    fn from(v: String) -> Self {
+        Self::Text(v)
+    }
+}
+
+/// One titled window of label/value rows, supplied by a game.
+#[derive(Clone, Debug, Default, PartialEq)]
+pub struct DebugPanel {
+    /// Window title. Also used (with the panel's index) to derive a stable egui id.
+    pub title: String,
+    /// Rows, drawn top to bottom in insertion order.
+    pub rows: Vec<(String, DebugValue)>,
+}
+
+impl DebugPanel {
+    /// Append a row. Chainable.
+    pub fn row(&mut self, label: impl Into<String>, value: impl Into<DebugValue>) -> &mut Self {
+        self.rows.push((label.into(), value.into()));
+        self
+    }
+}
+
+/// Game-supplied panels for the F12 overlay.
+///
+/// **Cleared at the start of every simulation tick** — fill it from a `FixedUpdate` system
+/// (`Fulcrum::add_system`) each tick. Writing from `Update` is not supported: panels would
+/// accumulate across frames until the next tick. Present only when [`DebugUiPlugin`] is
+/// installed, which `DefaultPlugins` does in debug builds only; game systems should take
+/// `Option<ResMut<DebugPanels>>`.
+#[derive(Resource, Default)]
+pub struct DebugPanels(pub Vec<DebugPanel>);
+
+impl DebugPanels {
+    /// Start a new panel and return it for row insertion.
+    pub fn panel(&mut self, title: impl Into<String>) -> &mut DebugPanel {
+        self.0.push(DebugPanel {
+            title: title.into(),
+            rows: Vec::new(),
+        });
+        self.0.last_mut().expect("just pushed")
+    }
+}
+
 struct EguiParts {
     ctx: egui::Context,
     winit: Mutex<Option<egui_winit::State>>,
@@ -49,6 +148,8 @@ impl Plugin for DebugUiPlugin {
     fn build(&self, app: &mut Fulcrum) {
         app.world_mut().insert_resource(DebugUi::default());
         app.world_mut().insert_resource(DebugUiFocus::default());
+        app.world_mut().insert_resource(DebugPanels::default());
+        app.add_tick_start_hook(clear_panels);
         app.world_mut().insert_resource(EguiRes(EguiParts {
             ctx: egui::Context::default(),
             winit: Mutex::new(None),
@@ -65,6 +166,15 @@ impl Plugin for DebugUiPlugin {
         app.world_mut()
             .insert_resource(RenderOverlay(Box::new(render_overlay)));
         app.add_systems(Update, toggle_overlay);
+    }
+}
+
+/// Tick-start hook: empty the game-supplied panels so `FixedUpdate` systems can refill them.
+/// Uses `Vec::clear` so the outer allocation is reused from tick to tick. No-op when the
+/// resource is absent.
+fn clear_panels(world: &mut World) {
+    if let Some(mut panels) = world.get_resource_mut::<DebugPanels>() {
+        panels.0.clear();
     }
 }
 
@@ -234,6 +344,36 @@ fn draw_windows(ctx: &egui::Context, world: &mut World, edited_once: &Mutex<bool
         .show(ctx, |ui| {
             assets_ui(ui, world);
         });
+
+    // Game panels: read-only here — the per-tick clear (`clear_panels`) owns their lifetime.
+    if let Some(panels) = world.get_resource::<DebugPanels>() {
+        for (index, panel) in panels.0.iter().enumerate() {
+            // Explicit id: `Window::new` derives one from the title, so same-titled panels
+            // would otherwise collide.
+            egui::Window::new(&panel.title)
+                .id(egui::Id::new(("fulcrum_debug_panel", index)))
+                .default_pos([370.0, 16.0 + index as f32 * 24.0])
+                .show(ctx, |ui| {
+                    egui::Grid::new(("fulcrum_debug_panel_grid", index)).show(ui, |ui| {
+                        for (label, value) in &panel.rows {
+                            ui.label(label);
+                            ui.label(format_debug_value(value));
+                            ui.end_row();
+                        }
+                    });
+                });
+        }
+    }
+}
+
+fn format_debug_value(value: &DebugValue) -> String {
+    match value {
+        DebugValue::Text(s) => s.clone(),
+        DebugValue::F32(v) => format!("{v:.3}"),
+        DebugValue::I64(v) => v.to_string(),
+        DebugValue::Bool(true) => "yes".to_string(),
+        DebugValue::Bool(false) => "no".to_string(),
+    }
 }
 
 fn entities_ui(ui: &mut egui::Ui, world: &mut World, edited_once: &Mutex<bool>) {
@@ -373,5 +513,91 @@ fn assets_ui(ui: &mut egui::Ui, world: &mut World) {
         world
             .resource_mut::<bevy_ecs::prelude::Messages<AssetEvent>>()
             .write(AssetEvent { path });
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn panel_with_rows(title: &str) -> DebugPanel {
+        DebugPanel {
+            title: title.to_string(),
+            rows: vec![("a".to_string(), DebugValue::Bool(true))],
+        }
+    }
+
+    #[test]
+    fn panel_builder_appends_rows_in_order() {
+        let mut panels = DebugPanels::default();
+        panels.panel("x").row("a", 1.0_f32).row("b", true);
+        assert_eq!(
+            panels.0,
+            vec![DebugPanel {
+                title: "x".to_string(),
+                rows: vec![
+                    ("a".to_string(), DebugValue::F32(1.0)),
+                    ("b".to_string(), DebugValue::Bool(true)),
+                ],
+            }]
+        );
+    }
+
+    #[test]
+    fn debug_value_from_conversions() {
+        assert_eq!(DebugValue::from(1.5_f32), DebugValue::F32(1.5));
+        assert_eq!(DebugValue::from(3_i32), DebugValue::I64(3));
+        assert_eq!(DebugValue::from(-7_i64), DebugValue::I64(-7));
+        assert_eq!(DebugValue::from(9_u32), DebugValue::I64(9));
+        assert_eq!(DebugValue::from(true), DebugValue::Bool(true));
+        assert_eq!(DebugValue::from("x"), DebugValue::Text("x".to_string()));
+        assert_eq!(
+            DebugValue::from("y".to_string()),
+            DebugValue::Text("y".to_string())
+        );
+    }
+
+    #[test]
+    fn format_debug_value_cases() {
+        assert_eq!(format_debug_value(&DebugValue::F32(0.6666)), "0.667");
+        assert_eq!(format_debug_value(&DebugValue::I64(-4)), "-4");
+        assert_eq!(format_debug_value(&DebugValue::Bool(true)), "yes");
+        assert_eq!(format_debug_value(&DebugValue::Bool(false)), "no");
+        assert_eq!(format_debug_value(&DebugValue::Text("hi".into())), "hi");
+    }
+
+    #[test]
+    fn clear_panels_empties_the_resource() {
+        let mut world = World::new();
+        world.insert_resource(DebugPanels(vec![
+            panel_with_rows("a"),
+            panel_with_rows("b"),
+        ]));
+        clear_panels(&mut world);
+        assert!(world.resource::<DebugPanels>().0.is_empty());
+    }
+
+    #[test]
+    fn clear_panels_without_resource_is_noop() {
+        let mut world = World::new();
+        clear_panels(&mut world);
+        assert!(world.get_resource::<DebugPanels>().is_none());
+    }
+
+    fn push_one_panel(mut panels: ResMut<DebugPanels>) {
+        panels.panel("per tick").row("n", 1_i32);
+    }
+
+    #[test]
+    fn panels_are_cleared_each_tick_and_survive_between_ticks() {
+        let mut app = Fulcrum::new("test")
+            .with_plugin(DebugUiPlugin)
+            .add_system(push_one_panel);
+        for _ in 0..3 {
+            app.tick();
+            assert_eq!(app.world().resource::<DebugPanels>().0.len(), 1);
+        }
+        // No tick (a rendered frame between ticks): the panel is still there to draw.
+        assert_eq!(app.world().resource::<DebugPanels>().0.len(), 1);
     }
 }

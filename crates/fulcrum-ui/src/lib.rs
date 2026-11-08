@@ -12,7 +12,7 @@ pub mod widgets;
 
 use fulcrum_core::{Fulcrum, IntoScheduleConfigs, Plugin, Update};
 
-pub use debug::{DebugUi, DebugUiFocus, DebugUiPlugin};
+pub use debug::{DebugPanel, DebugPanels, DebugUi, DebugUiFocus, DebugUiPlugin, DebugValue};
 pub use interact::{UiEvent, UiFocus};
 pub use loader::{UiLoader, UiQuery};
 pub use node::{Anchor, StackDir, UiId, UiNode, UiRect, UiRootPath, UiSize};
